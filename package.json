@@ -2,7 +2,9 @@
   "name": "mynotebook",
   "version": "0.1.0",
   "private": true,
+  "main": "main.js",
   "dependencies": {
+    "electron": "^6.0.7",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
     "react-scripts": "3.1.1"
@@ -11,7 +13,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "start-electron": "electron ."
   },
   "eslintConfig": {
     "extends": "react-app"
