@@ -81,4 +81,10 @@ function readChildrenOf(parentId) {
     }
 }
 
-export { readChildrenOf };
+
+function readContentOf(nodeId) {
+    // TODO
+    return 'test content';
+}
+
+export { readChildrenOf, readContentOf };

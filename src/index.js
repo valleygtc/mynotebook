@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { readChildrenOf } from './db'
+import { readChildrenOf, readContentOf } from './db'
 
 
 class TopBar extends React.Component {
@@ -155,8 +155,7 @@ class Page extends React.Component {
     }
 
     readPage(nodeId) {
-        // TODO
-        return 'test content';
+        return readContentOf(nodeId);
     }
 
     render() {
