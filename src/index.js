@@ -2,10 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-
-function readChildrenOf(parentId) {
-    // TODO: db -> select * from table where parentId == parentId order by order
-}
+import { readChildrenOf } from './db'
 
 
 class TopBar extends React.Component {
@@ -22,26 +19,7 @@ class TopBar extends React.Component {
     }
 
     readTopBarNodes() {
-        // TODO select * from table where level === 0 order by order
-        return [
-            {
-                'id': 1,
-                'level': 0,
-                'order': 1,
-                'parentId': null,
-                'title': 'book1',
-                'content': 'testtttttt contetn'
-            },
-            {
-                'id': 6,
-                'level': 0,
-                'order': 2,
-                'parentId': null,
-                'title': 'book2',
-                'content': 'testtttttt contetn222222222222222222222'
-            }
-        ];
-        // return readChildrenOf(null);
+        return readChildrenOf(null);
     }
 
     renderTopBarNodes(nodes, activeNodeId) {
@@ -81,65 +59,16 @@ class SideBar extends React.Component {
     }
 
     readSideBarNodes(parentNodeId) {
-        // TODO
-        // select from table where parentId == parentNodeId order by order
         // recursive read
-        return [
-            {
-                'thisNode': {
-                    'id': 2,
-                    'level': 1,
-                    'order': 1,
-                    'parentId': 1,
-                    'title': 'parentNode1',
-                    'content': 'testtttttt contetn'
-                },
-                'subNodes': [
-                    {
-                        'thisNode': {
-                            'id': 3,
-                            'level': 2,
-                            'order': 1,
-                            'parentId': 2,
-                            'title': 'p1-subNode1',
-                            'content': 'testtttttt contetn'
-                        },
-                        'subNodes': []
-                    },
-                    {
-                        'thisNode': {
-                            'id': 4,
-                            'level': 2,
-                            'order': 2,
-                            'parentId': 2,
-                            'title': 'p2-subNode2',
-                            'content': 'testtttttt contetn'
-                        },
-                        'subNodes': []
-                    }
-                ]
-            },
-            {
-                'thisNode': {
-                    'id': 5,
-                    'level': 1,
-                    'order': 2,
-                    'parentId': 1,
-                    'title': 'parentNode2',
-                    'content': 'testtttttt contetn'
-                },
-                'subNodes': []
-            }
-        ];
-        // const nodes_data = readChildrenOf(parentNodeId);
-        // const nodes = []
-        // for (const data of nodes_data) {
-        //     nodes.push({
-        //         thisNode: data,
-        //         subNodes: this.readSideBarNodes(data.id)
-        //     })
-        // }
-        // return nodes;
+        const nodes_data = readChildrenOf(parentNodeId);
+        const nodes = []
+        for (const data of nodes_data) {
+            nodes.push({
+                thisNode: data,
+                subNodes: this.readSideBarNodes(data.id)
+            })
+        }
+        return nodes;
     }
 
     renderSideBarNodes(nodes) {
