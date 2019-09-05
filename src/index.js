@@ -53,7 +53,6 @@ class SideBar extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            nodes: this.readSideBarNodes(this.props.activeNodeIdChain[0]),
             expandNodes: []
         }
     }
@@ -102,13 +101,14 @@ class SideBar extends React.Component {
     }
 
     render() {
+        const nodes = this.readSideBarNodes(this.props.activeNodeIdChain[0]);
         return (<div
             style={{
                 borderLeft: '1px solid black',
                 display: 'flex',
                 flexDirection: 'column'
             }}>
-              {this.renderSideBarNodes(this.state.nodes)}
+              {this.renderSideBarNodes(nodes)}
         </div>);
     }
 }
