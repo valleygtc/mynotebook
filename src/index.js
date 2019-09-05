@@ -2,119 +2,35 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { readChildrenOf, readContentOf } from './db'
+import { readChildrenOf, readParentChainOf, readContentOf } from './db'
 
 
-class TopBar extends React.Component {
-    /**
-     * props:
-     *     activeNodeId [Number]
-     *     handleNodeClick [callback func]
-     */
-    constructor(props) {
-        super(props);
-        this.state = {
-            nodes: this.readTopBarNodes()
-        }
-    }
-
-    readTopBarNodes() {
-        return readChildrenOf(null);
-    }
-
-    renderTopBarNodes(nodes, activeNodeId) {
-        const items = [];
-        for (const node of nodes) {
-            items.push(
-                <Node key={node.id}
-                      title={node.title}
-                      active={node.id === activeNodeId ? true : false}
-                      handleClick={() => {this.props.handleNodeClick(node.id)}} />
-            );
-        }
-        return items;
-    }
-
-    render(){
-        return (<div
-            style={{
-                gridColumn: '1/3',
-                borderBottom: '1px solid black',
-                display: 'flex',
-                flexWrap: 'wrap'
-            }}>
-              {this.renderTopBarNodes(this.state.nodes, this.props.activeNodeId)}
-        </div>);
-    }
+function TopBar({children}) {
+    return (<div
+        style={{
+            gridColumn: '1/3',
+            borderBottom: '1px solid black',
+            display: 'flex',
+            flexWrap: 'wrap'
+        }}>
+            {children}
+    </div>);
 }
 
 
-class SideBar extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            expandNodes: []
-        }
-    }
-
-    readSideBarNodes(parentNodeId) {
-        // recursive read
-        const nodes_data = readChildrenOf(parentNodeId);
-        const nodes = []
-        for (const data of nodes_data) {
-            nodes.push({
-                thisNode: data,
-                subNodes: this.readSideBarNodes(data.id)
-            })
-        }
-        return nodes;
-    }
-
-    renderSideBarNodes(nodes) {
-        /** recursive render
-         * 
-         * Params:
-         *     nodes [Array[Object]]: [
-         *     {
-         *         'thisNode': [Object],
-         *         'subNodes': [Array[Object]]
-         *     },
-         *     ...
-         *     ]
-         */
-        let items = [];
-        for (const nodeBlock of nodes) {
-            const thisNode = nodeBlock.thisNode;
-            const hasArrow = nodeBlock.subNodes ? true : false;
-            items.push(
-                <Node key={thisNode.id}
-                        title={thisNode.title}
-                        hasArrow={hasArrow}
-                        expand={thisNode.expand}
-                        active={thisNode.active} />
-            );
-            if (nodeBlock.subNodes) {
-                items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes))
-            }
-        }
-        return items;
-    }
-
-    render() {
-        const nodes = this.readSideBarNodes(this.props.activeNodeIdChain[0]);
-        return (<div
-            style={{
-                borderLeft: '1px solid black',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-              {this.renderSideBarNodes(nodes)}
-        </div>);
-    }
+function SideBar({children}) {
+    return (<div
+        style={{
+            borderLeft: '1px solid black',
+            display: 'flex',
+            flexDirection: 'column'
+        }}>
+            {children}
+    </div>);
 }
 
 
-function Node({title, hasArrow, expand, active, handleClick}) {
+function Node({title, hasArrow, expand, active, onClick}) {
     /**
      * props:
      *     title [String]
@@ -139,7 +55,7 @@ function Node({title, hasArrow, expand, active, handleClick}) {
             border: '1px solid black',
             backgroundColor: active ? 'green' : 'white'
         }}
-        onClick={handleClick}>
+        onClick={onClick}>
       {arrow}
       <span>{title}</span>
     </div>);
@@ -150,12 +66,8 @@ class Page extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            content: this.readPage(this.props.activeNodeId)
+            content: readContentOf(this.props.nodeId)
         }
-    }
-
-    readPage(nodeId) {
-        return readContentOf(nodeId);
     }
 
     render() {
@@ -168,13 +80,91 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            activeNodeIdChain: [1, 2, 3]
+            topBarNodes: readChildrenOf(null),
+            sideBarNodes: [],
+            activeNodeIdChain: [] // level(层级) low -> high
         };
     }
 
+    renderTopBarNodes = (nodes, activeNodeId) => {
+        const items = [];
+        for (const node of nodes) {
+            items.push(
+                <Node key={node.id}
+                      title={node.title}
+                      active={node.id === activeNodeId ? true : false}
+                      onClick={() => {this.handleTopBarNodeClick(node.id)}}
+                />
+            );
+        }
+        return items;
+    }
+
     handleTopBarNodeClick = (nodeId) => {
+        if (nodeId === this.state.activeNodeIdChain[0]) {
+            return
+        }
         this.setState({
-            activeNodeIdChain: [nodeId]
+            activeNodeIdChain: [nodeId],
+            sideBarNodes: this.readNodeStructure(nodeId)
+        });
+    }
+
+    readNodeStructure = (parentNodeId) => {
+        // recursive read
+        const nodes_data = readChildrenOf(parentNodeId);
+        const nodes = []
+        for (const data of nodes_data) {
+            nodes.push({
+                thisNode: data,
+                subNodes: this.readNodeStructure(data.id)
+            })
+        }
+        return nodes;
+    }
+
+    renderSideBarNodes = (nodes, activeNodeIdChain) => {
+        /** recursive render
+         * 
+         * Params:
+         *     nodes [Array[Object]]: [
+         *     {
+         *         'thisNode': [Object],
+         *         'subNodes': [Array[Object]]
+         *     },
+         *     ...
+         *     ]
+         */
+        let items = [];
+        const activeNodeId = activeNodeIdChain[activeNodeIdChain.length - 1];
+        for (const nodeBlock of nodes) {
+            const thisNode = nodeBlock.thisNode;
+            const hasArrow = nodeBlock.subNodes ? true : false;
+            items.push(
+                <Node
+                  key={thisNode.id}
+                  title={thisNode.title}
+                  hasArrow={hasArrow}
+                  expand={thisNode.expand}
+                  active={thisNode.id === activeNodeId ? true : false}
+                  onClick={() => {this.handleSideBarNodeClick(thisNode.id)}}
+                />
+            );
+            if (nodeBlock.subNodes) {
+                items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeIdChain))
+            }
+        }
+        return items;
+    }
+
+    handleSideBarNodeClick = (nodeId) => {
+        const parentChain = readParentChainOf(nodeId);
+        const parentIdChain = parentChain.reverse().map((node) => {
+            return node.id;
+        });
+        parentIdChain.push(nodeId);
+        this.setState({
+            activeNodeIdChain: parentIdChain
         });
     }
 
@@ -187,13 +177,15 @@ class App extends React.Component {
                 gridTemplateRows: '5% 95%',
                 gridTemplateColumns: '80% 20%'
             }}>
-              <TopBar activeNodeId={this.state.activeNodeIdChain[0]}
-                      handleNodeClick={this.handleTopBarNodeClick} />
+              <TopBar>
+                {this.renderTopBarNodes(this.state.topBarNodes, this.state.activeNodeIdChain[0])}
+              </TopBar>
               <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
-              <SideBar activeNodeIdChain={this.state.activeNodeIdChain} />
+              <SideBar>
+                {this.renderSideBarNodes(this.state.sideBarNodes, this.state.activeNodeIdChain)}
+              </SideBar>
         </div>);
     }
-    
 }
 
 ReactDOM.render(<App />, document.getElementById('root'))
