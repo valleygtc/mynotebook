@@ -30,7 +30,26 @@ function SideBar({children}) {
 }
 
 
-function Node({title, hasArrow, expand, active, onClick}) {
+function TopBarNode({title, active, onClick}) {
+    /**
+     * props:
+     *     title [String]
+     *     active [Boolean]
+     * 
+     *     onClick [callback func]
+     */
+    return (<div
+        style={{
+            border: '1px solid black',
+            backgroundColor: active ? 'green' : 'white'
+        }}
+        onClick={onClick}>
+      <span>{title}</span>
+    </div>);
+}
+
+
+function SideBarNode({title, hasArrow, expand, active, onClick, indent}) {
     /**
      * props:
      *     title [String]
@@ -38,7 +57,7 @@ function Node({title, hasArrow, expand, active, onClick}) {
      *     expand [Boolean]
      *     active [Boolean]
      * 
-     *     handleClick [callback func]
+     *     onClick [callback func]
      */
     let arrow;
     if (hasArrow) {
@@ -56,8 +75,13 @@ function Node({title, hasArrow, expand, active, onClick}) {
             backgroundColor: active ? 'green' : 'white'
         }}
         onClick={onClick}>
-      {arrow}
-      <span>{title}</span>
+      <div style={{
+          display: 'inline-block',
+          margin: `${indent * 8}px`
+      }}>{arrow}</div>
+      <div style={{
+          display: 'inline-block'
+      }}>{title}</div>
     </div>);
 }
 
@@ -90,10 +114,11 @@ class App extends React.Component {
         const items = [];
         for (const node of nodes) {
             items.push(
-                <Node key={node.id}
-                      title={node.title}
-                      active={node.id === activeNodeId ? true : false}
-                      onClick={() => {this.handleTopBarNodeClick(node.id)}}
+                <TopBarNode 
+                  key={node.id}
+                  title={node.title}
+                  active={node.id === activeNodeId ? true : false}
+                  onClick={() => {this.handleTopBarNodeClick(node.id)}}
                 />
             );
         }
@@ -142,13 +167,14 @@ class App extends React.Component {
             const isSubestNode = nodeBlock.subNodes.length === 0;
             const hasArrow = isSubestNode ? false : true;
             items.push(
-                <Node
+                <SideBarNode
                   key={thisNode.id}
                   title={thisNode.title}
                   hasArrow={hasArrow}
                   expand={thisNode.expand}
                   active={thisNode.id === activeNodeId ? true : false}
                   onClick={() => {this.handleSideBarNodeClick(thisNode.id)}}
+                  indent={thisNode.level - 1}
                 />
             );
             if (!isSubestNode) {
