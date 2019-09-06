@@ -49,7 +49,7 @@ function TopBarNode({title, active, onClick}) {
 }
 
 
-function SideBarNode({title, hasArrow, expand, active, onClick, indent}) {
+function SideBarNode({title, hasArrow, expand, active, onClick, indent, onExpand}) {
     /**
      * props:
      *     title [String]
@@ -69,20 +69,23 @@ function SideBarNode({title, hasArrow, expand, active, onClick, indent}) {
     } else {
         arrow = null;
     }
-    return (<div
-        style={{
+    return (
+        <div
+          style={{
             border: '1px solid black',
             backgroundColor: active ? 'green' : 'white'
-        }}
-        onClick={onClick}>
-      <div style={{
-          display: 'inline-block',
-          margin: `${indent * 8}px`
-      }}>{arrow}</div>
-      <div style={{
-          display: 'inline-block'
-      }}>{title}</div>
-    </div>);
+          }}
+          onClick={onClick}>
+          <div 
+            style={{
+              display: 'inline-block',
+              margin: `${indent * 8}px`
+              }}
+            onClick={onExpand}>{arrow}</div>
+          <div style={{
+            display: 'inline-block'
+            }}>{title}</div>
+        </div>);
 }
 
 
@@ -105,8 +108,9 @@ class App extends React.Component {
         super(props);
         this.state = {
             topBarNodes: readChildrenOf(null),
-            sideBarNodes: [],
-            activeNodeIdChain: [] // level(层级) low -> high
+            sideBarNodesStructure: [],
+            activeNodeIdChain: [], // level(层级) low -> high
+            expandNodeIdList: []
         };
     }
 
@@ -131,7 +135,7 @@ class App extends React.Component {
         }
         this.setState({
             activeNodeIdChain: [nodeId],
-            sideBarNodes: this.readNodeStructure(nodeId)
+            sideBarNodesStructure: this.readNodeStructure(nodeId)
         });
     }
 
@@ -164,20 +168,21 @@ class App extends React.Component {
         const activeNodeId = activeNodeIdChain[activeNodeIdChain.length - 1];
         for (const nodeBlock of nodes) {
             const thisNode = nodeBlock.thisNode;
-            const isSubestNode = nodeBlock.subNodes.length === 0;
-            const hasArrow = isSubestNode ? false : true;
+            const hasSubNodes = nodeBlock.subNodes.length > 0;
+            const expand = this.state.expandNodeIdList.includes(thisNode.id);
             items.push(
                 <SideBarNode
                   key={thisNode.id}
                   title={thisNode.title}
-                  hasArrow={hasArrow}
-                  expand={thisNode.expand}
+                  hasArrow={hasSubNodes}
+                  expand={expand}
                   active={thisNode.id === activeNodeId ? true : false}
                   onClick={() => {this.handleSideBarNodeClick(thisNode.id)}}
                   indent={thisNode.level - 1}
+                  onExpand={() => {this.handleSideBarNodeExpandClick(thisNode.id)}}
                 />
             );
-            if (!isSubestNode) {
+            if (hasSubNodes && expand) {
                 items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeIdChain))
             }
         }
@@ -195,6 +200,19 @@ class App extends React.Component {
         });
     }
 
+    handleSideBarNodeExpandClick = (nodeId) => {
+        const index = this.state.expandNodeIdList.indexOf(nodeId);
+        let newList = [...this.state.expandNodeIdList];
+        if (index === -1) {
+            newList.push(nodeId);
+        } else {
+            newList.splice(index, 1);
+        }
+        this.setState({
+            expandNodeIdList: newList
+        })
+    }
+
     render() {
         return (<div
             style={{
@@ -209,7 +227,7 @@ class App extends React.Component {
               </TopBar>
               <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
               <SideBar>
-                {this.renderSideBarNodes(this.state.sideBarNodes, this.state.activeNodeIdChain)}
+                {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.state.activeNodeIdChain)}
               </SideBar>
         </div>);
     }
