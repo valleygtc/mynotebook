@@ -5,6 +5,20 @@ import './index.css';
 import { readChildrenOf, readParentChainOf, readContentOf } from './db'
 
 
+function Trangle() {
+    return (<div
+        style={{
+            width: 0,
+            height: 0,
+            border: 'solid 5px',
+            borderColor: 'black transparent transparent transparent',
+            position: 'absolute',
+            top: '-6px',
+            right: '-6px'
+        }}></div>)
+}
+
+
 function TopBar({children}) {
     return (<div
         style={{
@@ -87,25 +101,16 @@ class TopBarNode extends React.Component {
 
     render() {
         const {title, active, onClick, onDragStart} = this.props;
-        const style = {
-            border: '1px solid black',
-            backgroundColor: active ? 'green' : 'white',
-            cursor: 'pointer',
-            userSelect: 'none'
-        }
-        if (this.state.isOver) {
-            if (this.state.trendToRight) {
-                style.borderRightWidth = '2px';
-                style.borderRightColor = 'red';
-            } else {
-                style.borderLeftWidth = '2px';
-                style.borderLeftColor = 'red';
-            }
-        }
         return (
         <div
           ref={this.boxRef}
-          style={style}
+          style={{
+              border: '1px solid black',
+              backgroundColor: active ? 'green' : 'white',
+              cursor: 'pointer',
+              userSelect: 'none',
+              position: 'relative' // 为了子元素trangle的绝对定位。
+          }}
           onClick={onClick}
           draggable={true}
           onDragStart={onDragStart}
@@ -113,11 +118,15 @@ class TopBarNode extends React.Component {
           onDrop={this.handleDrop}
           onDragEnter={this.handleDragEnter}
           onDragLeave={this.handleDragLeave}>
+          {(this.state.isOver && !this.state.trendToRight) && 
+          <Trangle />}
           <div
             style={{
                 margin: '5px 10px 0',
                 pointerEvents: 'none' // 防止子元素触发ondragleave事件。
             }}>{title}</div>
+          {(this.state.isOver && this.state.trendToRight) && 
+          <Trangle />}
         </div>);
     }
 }
