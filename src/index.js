@@ -139,7 +139,8 @@ class App extends React.Component {
         const activeNodeId = activeNodeIdChain[activeNodeIdChain.length - 1];
         for (const nodeBlock of nodes) {
             const thisNode = nodeBlock.thisNode;
-            const hasArrow = nodeBlock.subNodes ? true : false;
+            const isSubestNode = nodeBlock.subNodes.length === 0;
+            const hasArrow = isSubestNode ? false : true;
             items.push(
                 <Node
                   key={thisNode.id}
@@ -150,7 +151,7 @@ class App extends React.Component {
                   onClick={() => {this.handleSideBarNodeClick(thisNode.id)}}
                 />
             );
-            if (nodeBlock.subNodes) {
+            if (!isSubestNode) {
                 items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeIdChain))
             }
         }
