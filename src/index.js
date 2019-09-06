@@ -11,7 +11,8 @@ function TopBar({children}) {
             gridColumn: '1/3',
             borderBottom: '1px solid black',
             display: 'flex',
-            flexWrap: 'wrap'
+            flexWrap: 'wrap',
+            alignItems: 'flex-end'
         }}>
             {children}
     </div>);
@@ -41,10 +42,15 @@ function TopBarNode({title, active, onClick}) {
     return (<div
         style={{
             border: '1px solid black',
-            backgroundColor: active ? 'green' : 'white'
+            backgroundColor: active ? 'green' : 'white',
+            cursor: 'pointer',
+            userSelect: 'none'
         }}
         onClick={onClick}>
-      <span>{title}</span>
+      <div
+        style={{
+            margin: '5px 10px 0'
+        }}>{title}</div>
     </div>);
 }
 
@@ -73,7 +79,9 @@ function SideBarNode({title, hasArrow, expand, active, onClick, indent, onExpand
         <div
           style={{
             border: '1px solid black',
-            backgroundColor: active ? 'green' : 'white'
+            backgroundColor: active ? 'green' : 'white',
+            cursor: 'pointer',
+            userSelect: 'none'
           }}
           onClick={onClick}>
           <div 
