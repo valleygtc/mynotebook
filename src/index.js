@@ -42,8 +42,10 @@ class TopBarNode extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            isOver: false
+            isOver: false,
+            trendToRight: true
         }
+        this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
     }
 
     handleDragEnter = (event) => {
@@ -63,6 +65,17 @@ class TopBarNode extends React.Component {
     handleDragOver = (event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
+        const cursorOffsetX = event.nativeEvent.offsetX;
+        const boxWidth = this.boxRef.current.clientWidth;
+        if (cursorOffsetX > boxWidth / 2) {
+            this.setState({
+                trendToRight: true
+            })
+        } else {
+            this.setState({
+                trendToRight: false
+            })
+        }
     }
 
     handleDrop = (event) => {
@@ -74,14 +87,25 @@ class TopBarNode extends React.Component {
 
     render() {
         const {title, active, onClick, onDragStart} = this.props;
+        const style = {
+            border: '1px solid black',
+            backgroundColor: active ? 'green' : 'white',
+            cursor: 'pointer',
+            userSelect: 'none'
+        }
+        if (this.state.isOver) {
+            if (this.state.trendToRight) {
+                style.borderRightWidth = '2px';
+                style.borderRightColor = 'red';
+            } else {
+                style.borderLeftWidth = '2px';
+                style.borderLeftColor = 'red';
+            }
+        }
         return (
         <div
-          style={{
-              border: this.state.isOver ? '2px solid yellow' : '1px solid black',
-              backgroundColor: active ? 'green' : 'white',
-              cursor: 'pointer',
-              userSelect: 'none'
-          }}
+          ref={this.boxRef}
+          style={style}
           onClick={onClick}
           draggable={true}
           onDragStart={onDragStart}
