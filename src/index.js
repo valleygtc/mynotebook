@@ -31,7 +31,7 @@ function SideBar({children}) {
 }
 
 
-function TopBarNode({title, active, onClick}) {
+class TopBarNode extends React.Component {
     /**
      * props:
      *     title [String]
@@ -39,19 +39,63 @@ function TopBarNode({title, active, onClick}) {
      * 
      *     onClick [callback func]
      */
-    return (<div
-        style={{
-            border: '1px solid black',
-            backgroundColor: active ? 'green' : 'white',
-            cursor: 'pointer',
-            userSelect: 'none'
-        }}
-        onClick={onClick}>
-      <div
-        style={{
-            margin: '5px 10px 0'
-        }}>{title}</div>
-    </div>);
+    constructor(props) {
+        super(props);
+        this.state = {
+            isOver: false
+        }
+    }
+
+    handleDragEnter = (event) => {
+        event.preventDefault();
+        this.setState({
+            isOver: true
+        })
+    }
+
+    handleDragLeave = (event) => {
+        event.preventDefault();
+        this.setState({
+            isOver: false
+        })
+    }
+
+    handleDragOver = (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }
+
+    handleDrop = (event) => {
+        this.setState({
+            isOver: false
+        })
+        this.props.onDrop(event);
+    }
+
+    render() {
+        const {title, active, onClick, onDragStart} = this.props;
+        return (
+        <div
+          style={{
+              border: this.state.isOver ? '2px solid yellow' : '1px solid black',
+              backgroundColor: active ? 'green' : 'white',
+              cursor: 'pointer',
+              userSelect: 'none'
+          }}
+          onClick={onClick}
+          draggable={true}
+          onDragStart={onDragStart}
+          onDragOver={this.handleDragOver}
+          onDrop={this.handleDrop}
+          onDragEnter={this.handleDragEnter}
+          onDragLeave={this.handleDragLeave}>
+          <div
+            style={{
+                margin: '5px 10px 0',
+                pointerEvents: 'none' // 防止子元素触发ondragleave事件。
+            }}>{title}</div>
+        </div>);
+    }
 }
 
 
@@ -126,11 +170,13 @@ class App extends React.Component {
         const items = [];
         for (const node of nodes) {
             items.push(
-                <TopBarNode 
+                <TopBarNode
                   key={node.id}
                   title={node.title}
                   active={node.id === activeNodeId ? true : false}
                   onClick={() => {this.handleTopBarNodeClick(node.id)}}
+                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
+                  onDrop={(event) => {this.handleNodeDrop(node.id, event)}}
                 />
             );
         }
@@ -145,6 +191,18 @@ class App extends React.Component {
             activeNodeIdChain: [nodeId],
             sideBarNodesStructure: this.readNodeStructure(nodeId)
         });
+    }
+
+    handleNodeDragStart = (nodeId, event) => {
+        event.dataTransfer.setData('fromNodeId', nodeId);
+        event.dataTransfer.dropEffect = 'move';
+    }
+
+    handleNodeDrop = (toNodeId, event) => {
+        event.preventDefault();
+        const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
+        // perform node move, write database and retrive data then setState topBarNodes
+        // TODO
     }
 
     readNodeStructure = (parentNodeId) => {
