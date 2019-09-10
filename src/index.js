@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { readChildrenOf, readParentChainOf, readContentOf } from './db'
+import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf } from './db'
 
 
 function Trangle() {
@@ -191,6 +191,7 @@ class Page extends React.Component {
 class App extends React.Component {
     constructor(props) {
         super(props);
+        initDB();
         this.state = {
             topBarNodes: readChildrenOf(null),
             sideBarNodesStructure: [],
@@ -301,10 +302,7 @@ class App extends React.Component {
     }
 
     handleSideBarNodeClick = (nodeId) => {
-        const parentChain = readParentChainOf(nodeId);
-        const parentIdChain = parentChain.reverse().map((node) => {
-            return node.id;
-        });
+        const parentIdChain = readParentNodeIdChainOf(nodeId);
         parentIdChain.push(nodeId);
         this.setState({
             activeNodeIdChain: parentIdChain
