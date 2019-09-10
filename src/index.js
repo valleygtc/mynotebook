@@ -96,7 +96,7 @@ class TopBarNode extends React.Component {
         this.setState({
             isOver: false
         })
-        this.props.onDrop(event);
+        this.props.onDrop(this.state.trendToRight, event);
     }
 
     render() {
@@ -209,7 +209,7 @@ class App extends React.Component {
                   active={node.id === activeNodeId ? true : false}
                   onClick={() => {this.handleTopBarNodeClick(node.id)}}
                   onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
-                  onDrop={(event) => {this.handleNodeDrop(node.id, event)}}
+                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
                 />
             );
         }
@@ -231,11 +231,23 @@ class App extends React.Component {
         event.dataTransfer.dropEffect = 'move';
     }
 
-    handleNodeDrop = (toNodeId, event) => {
+    handleNodeDrop = (toNodeId, insertAfter, event) => {
         event.preventDefault();
         const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
-        // perform node move, write database and retrive data then setState topBarNodes
-        // TODO
+        // perform node move: write database and retrive data then setState topBarNodes
+        let fromNodeIndex, toNodeIndex;
+        for (const [index, node] of this.state.topBarNodes.entries()) {
+            if (node.id === fromNodeId) {
+                fromNodeIndex = index;
+            } else if(node.id === toNodeId) {
+                toNodeIndex = index;
+            }
+        }
+        if (fromNodeIndex < toNodeIndex) {
+            if (insertAfter) {
+                // TODO
+            }
+        }
     }
 
     readNodeStructure = (parentNodeId) => {
