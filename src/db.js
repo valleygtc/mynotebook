@@ -132,5 +132,18 @@ function updateSeqOf(nodeId, newSeq) {
 }
 
 
+function addNode(level, sequence, parentId, title, content) {
+    const newNodeId = db.prepare(`insert into node (level, sequence, parentId, title, content)
+                                      values (?, ?, ?, ?, ?)`).run([level, sequence, parentId, title, content]);
+    return newNodeId;
+}
+
+
+function deleteNode(nodeId) {
+    db.prepare('delete from node where nodeId=?').run([nodeId]);
+}
+
+
 export { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf,
-         minusSeqOf, addSeqOf, updateSeqOf };
+         minusSeqOf, addSeqOf, updateSeqOf,
+         addNode, deleteNode };

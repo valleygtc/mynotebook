@@ -3,7 +3,8 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf, 
-         minusSeqOf, addSeqOf, updateSeqOf} from './db'
+         minusSeqOf, addSeqOf, updateSeqOf,
+         addNode, deleteNode } from './db'
 
 
 function Trangle() {
@@ -133,6 +134,20 @@ class TopBarNode extends React.Component {
 }
 
 
+function TopBarAddButton({onClick}) {
+    return (
+      <div
+        style={{
+            border: '1px solid black',
+            cursor: 'pointer',
+            userSelect: 'none',
+        }}
+        onClick={onClick}>
+        +
+      </div>);
+}
+
+
 function SideBarNode({title, hasArrow, expand, active, onClick, indent, onExpand}) {
     /**
      * props:
@@ -207,6 +222,7 @@ class App extends React.Component {
 
     renderTopBarNodes = (nodes, activeNodeId) => {
         const items = [];
+        let lastKey;
         for (const node of nodes) {
             items.push(
                 <TopBarNode
@@ -218,8 +234,18 @@ class App extends React.Component {
                   onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
                 />
             );
+            lastKey = node.id;
         }
+        items.push(<TopBarAddButton
+                      key={lastKey + 1}
+                      onClick={this.handleTopBarNodeAdd}/>);
         return items;
+    }
+
+    handleTopBarNodeAdd = () => {
+        const topBarNodes = this.state.topBarNodes;
+        addNode(0, topBarNodes.length + 1, null, '未命名', '');
+        this.setState(this.getInitState);
     }
 
     handleTopBarNodeClick = (nodeId) => {
