@@ -112,7 +112,10 @@ class TopBarNode extends React.Component {
     }
 
     render() {
-        const {title, active, onClick, onDragStart} = this.props;
+        const {title, active, onClick, onDragStart, onDelete} = this.props;
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'delete', click: onDelete}));
+
         return (
         <div
           ref={this.boxRef}
@@ -129,7 +132,12 @@ class TopBarNode extends React.Component {
           onDragOver={this.handleDragOver}
           onDrop={this.handleDrop}
           onDragEnter={this.handleDragEnter}
-          onDragLeave={this.handleDragLeave}>
+          onDragLeave={this.handleDragLeave}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            menu.popup();
+            e.stopPropagation();
+          }}>
           {(this.state.isOver && !this.state.trendToRight) && 
           <Trangle />}
           <div
@@ -230,31 +238,14 @@ class App extends React.Component {
         }
     }
 
-    renderTopBarNodes = (nodes, activeNodeId) => {
-        const items = [];
-        let lastKey;
-        for (const node of nodes) {
-            items.push(
-                <TopBarNode
-                  key={node.id}
-                  title={node.title}
-                  active={node.id === activeNodeId ? true : false}
-                  onClick={() => {this.handleTopBarNodeClick(node.id)}}
-                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
-                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
-                />
-            );
-            lastKey = node.id;
-        }
-        items.push(<TopBarAddButton
-                      key={lastKey + 1}
-                      onClick={this.handleTopBarNodeAdd}/>);
-        return items;
-    }
-
     handleTopBarNodeAdd = () => {
         const topBarNodes = this.state.topBarNodes;
         addNode(0, topBarNodes.length + 1, null, '未命名', '');
+        this.setState(this.getInitState);
+    }
+
+    handleTopBarNodeDelete = (nodeId) => {
+        deleteNode(nodeId);
         this.setState(this.getInitState);
     }
 
@@ -322,6 +313,29 @@ class App extends React.Component {
             }
         }
         this.setState(this.getInitState());
+    }
+
+    renderTopBarNodes = (nodes, activeNodeId) => {
+        const items = [];
+        let lastKey;
+        for (const node of nodes) {
+            items.push(
+                <TopBarNode
+                  key={node.id}
+                  title={node.title}
+                  active={node.id === activeNodeId ? true : false}
+                  onClick={() => {this.handleTopBarNodeClick(node.id)}}
+                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
+                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
+                  onDelete={() => {this.handleTopBarNodeDelete(node.id)}}
+                />
+            );
+            lastKey = node.id;
+        }
+        items.push(<TopBarAddButton
+                      key={lastKey + 1}
+                      onClick={this.handleTopBarNodeAdd}/>);
+        return items;
     }
 
     readNodeStructure = (parentNodeId) => {

@@ -77,7 +77,7 @@ function initDB() {
                     parentId INTEGER,
                     title TEXT,
                     content TEXT,
-                    FOREIGN KEY(parentId) REFERENCES node(id)
+                    FOREIGN KEY(parentId) REFERENCES node(id) ON DELETE CASCADE
                     )`).run();
 
     const stmt = db.prepare(`INSERT INTO node (id, level, sequence, parentId, title, content)
@@ -140,7 +140,7 @@ function addNode(level, sequence, parentId, title, content) {
 
 
 function deleteNode(nodeId) {
-    db.prepare('delete from node where nodeId=?').run([nodeId]);
+    db.prepare('delete from node where id=?').run([nodeId]);
 }
 
 
