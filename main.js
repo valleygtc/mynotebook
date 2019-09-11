@@ -9,6 +9,15 @@ var db = new sqlite3.Database(':memory:');
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
+function loadExtension(extPath) {
+  const path = require('path');
+  const os = require('os');
+  
+  BrowserWindow.addDevToolsExtension(
+    path.join(os.homedir(),extPath)
+  )
+}
+
 function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -35,10 +44,16 @@ function createWindow () {
   })
 }
 
+function startApp () {
+  // add react-dev-tools extension
+  loadExtension('\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.0.6_0');
+  createWindow();
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow)
+app.on('ready', startApp)
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
