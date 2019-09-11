@@ -101,7 +101,11 @@ function readChildrenOf(nodeId) {
 
 
 function readParentNodeIdChainOf(nodeId) {
-    // recursive select * from table where parentId == nodeId
+    /** recursive select * from table where parentId == nodeId
+     * 
+     * Return:
+     *     parentNodeIdChain [Array[Number]]: [parent, grandparent, grandgrandparent, ...]
+     */
     const parentId = db.prepare('select parentId from node where id = ?').get([nodeId]).parentId;
     if (parentId === null) {
         return [];

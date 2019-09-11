@@ -208,6 +208,20 @@ function SideBarNode({title, hasArrow, expand, active, onClick, indent, onExpand
 }
 
 
+function SideBarAddButton({onClick}) {
+    return (
+      <div
+        style={{
+            border: '1px solid black',
+            cursor: 'pointer',
+            userSelect: 'none',
+        }}
+        onClick={onClick}>
+        +
+      </div>);
+}
+
+
 class Page extends React.Component {
     constructor(props) {
         super(props);
@@ -233,7 +247,7 @@ class App extends React.Component {
         return {
             topBarNodes: readChildrenOf(null),
             sideBarNodesStructure: [],
-            activeNodeIdChain: [], // level(层级) low -> high
+            activeNodeIdChain: [], // level(层级) number low -> high
             expandNodeIdList: []
         }
     }
@@ -334,7 +348,13 @@ class App extends React.Component {
     }
 
     readNodeStructure = (parentNodeId) => {
-        // recursive read
+        /** recursive read
+         * 
+         * Return: {
+         *     thisNode: [Object]
+         *     subNodes: [Array[Object]]
+         * }
+         */
         const nodes_data = readChildrenOf(parentNodeId);
         const nodes = []
         for (const data of nodes_data) {
@@ -347,7 +367,7 @@ class App extends React.Component {
     }
 
     handleSideBarNodeClick = (nodeId) => {
-        const parentIdChain = readParentNodeIdChainOf(nodeId);
+        const parentIdChain = readParentNodeIdChainOf(nodeId).reverse();
         parentIdChain.push(nodeId);
         this.setState({
             activeNodeIdChain: parentIdChain
@@ -365,6 +385,12 @@ class App extends React.Component {
         this.setState({
             expandNodeIdList: newList
         })
+    }
+
+    handleSideBarNodeAdd = () => {
+        const s = this.state;
+        addNode(1, s.sideBarNodesStructure.length + 1, s.activeNodeIdChain[0], '未命名', '');
+        this.setState(this.getInitState);
     }
 
     renderSideBarNodes = (nodes, activeNodeIdChain) => {
@@ -419,6 +445,7 @@ class App extends React.Component {
               </TopBar>
               <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
               <SideBar>
+                <SideBarAddButton onClick={this.handleSideBarNodeAdd} />
                 {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.state.activeNodeIdChain)}
               </SideBar>
         </div>);
