@@ -10,20 +10,6 @@ const { remote } = window.require('electron');
 const { Menu, MenuItem } = remote;
 
 
-function Trangle() {
-    return (<div
-        style={{
-            width: 0,
-            height: 0,
-            border: 'solid 5px',
-            borderColor: 'black transparent transparent transparent',
-            position: 'absolute',
-            top: '-6px',
-            right: '-6px'
-        }}></div>)
-}
-
-
 class TopBar extends React.Component {
     /**
      * props:
@@ -163,6 +149,134 @@ class TopBar extends React.Component {
 }
 
 
+class TopBarNode extends React.Component {
+    /**
+     * props:
+     *     title [String]
+     *     active [Boolean]
+     * 
+     *     onClick [callback func]
+     *     onDragStart [callback func]
+     *     onDrop [callback func]
+     *     onDelete [callback func]
+     */
+    constructor(props) {
+        super(props);
+        this.state = {
+            isOver: false,
+            trendToRight: true
+        }
+        this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
+    }
+
+    handleDragEnter = (event) => {
+        event.preventDefault();
+        this.setState({
+            isOver: true
+        })
+    }
+
+    handleDragLeave = (event) => {
+        event.preventDefault();
+        this.setState({
+            isOver: false
+        })
+    }
+
+    handleDragOver = (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+        const cursorOffsetX = event.nativeEvent.offsetX;
+        const boxWidth = this.boxRef.current.clientWidth;
+        if (cursorOffsetX > boxWidth / 2) {
+            this.setState({
+                trendToRight: true
+            })
+        } else {
+            this.setState({
+                trendToRight: false
+            })
+        }
+    }
+
+    handleDrop = (event) => {
+        this.setState({
+            isOver: false
+        })
+        this.props.onDrop(this.state.trendToRight, event);
+    }
+
+    handleContextMenu = (event) => {
+        event.preventDefault();
+
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'delete', click: this.props.onDelete}));
+        menu.popup();
+        event.stopPropagation();
+    }
+
+    render() {
+        const {title, active, onClick, onDragStart} = this.props;
+        return (
+        <div
+          ref={this.boxRef}
+          style={{
+              border: '1px solid black',
+              backgroundColor: active ? 'green' : 'white',
+              cursor: 'pointer',
+              userSelect: 'none',
+              position: 'relative' // 为了子元素trangle的绝对定位。
+          }}
+          onClick={onClick}
+          draggable={true}
+          onDragStart={onDragStart}
+          onDragOver={this.handleDragOver}
+          onDrop={this.handleDrop}
+          onDragEnter={this.handleDragEnter}
+          onDragLeave={this.handleDragLeave}
+          onContextMenu={this.handleContextMenu}>
+          {(this.state.isOver && !this.state.trendToRight) && 
+          <Trangle />}
+          <div
+            style={{
+                margin: '5px 10px 0',
+                pointerEvents: 'none' // 防止子元素触发ondragleave事件。
+            }}>{title}</div>
+          {(this.state.isOver && this.state.trendToRight) && 
+          <Trangle />}
+        </div>);
+    }
+}
+
+
+function TopBarAddButton({onClick}) {
+    return (
+      <div
+        style={{
+            border: '1px solid black',
+            cursor: 'pointer',
+            userSelect: 'none',
+        }}
+        onClick={onClick}>
+        +
+      </div>);
+}
+
+
+function Trangle() {
+    return (<div
+        style={{
+            width: 0,
+            height: 0,
+            border: 'solid 5px',
+            borderColor: 'black transparent transparent transparent',
+            position: 'absolute',
+            top: '-6px',
+            right: '-6px'
+        }}></div>)
+}
+
+
 class SideBar extends React.Component {
     /**
      * props:
@@ -291,154 +405,54 @@ class SideBar extends React.Component {
 }
 
 
-class TopBarNode extends React.Component {
-    /**
-     * props:
-     *     title [String]
-     *     active [Boolean]
-     * 
-     *     onClick [callback func]
-     */
-    constructor(props) {
-        super(props);
-        this.state = {
-            isOver: false,
-            trendToRight: true
-        }
-        this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
-    }
-
-    handleDragEnter = (event) => {
-        event.preventDefault();
-        this.setState({
-            isOver: true
-        })
-    }
-
-    handleDragLeave = (event) => {
-        event.preventDefault();
-        this.setState({
-            isOver: false
-        })
-    }
-
-    handleDragOver = (event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-        const cursorOffsetX = event.nativeEvent.offsetX;
-        const boxWidth = this.boxRef.current.clientWidth;
-        if (cursorOffsetX > boxWidth / 2) {
-            this.setState({
-                trendToRight: true
-            })
-        } else {
-            this.setState({
-                trendToRight: false
-            })
-        }
-    }
-
-    handleDrop = (event) => {
-        this.setState({
-            isOver: false
-        })
-        this.props.onDrop(this.state.trendToRight, event);
-    }
-
-    render() {
-        const {title, active, onClick, onDragStart, onDelete} = this.props;
-        const menu = new Menu();
-        menu.append(new MenuItem({ label: 'delete', click: onDelete}));
-
-        return (
-        <div
-          ref={this.boxRef}
-          style={{
-              border: '1px solid black',
-              backgroundColor: active ? 'green' : 'white',
-              cursor: 'pointer',
-              userSelect: 'none',
-              position: 'relative' // 为了子元素trangle的绝对定位。
-          }}
-          onClick={onClick}
-          draggable={true}
-          onDragStart={onDragStart}
-          onDragOver={this.handleDragOver}
-          onDrop={this.handleDrop}
-          onDragEnter={this.handleDragEnter}
-          onDragLeave={this.handleDragLeave}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            menu.popup();
-            e.stopPropagation();
-          }}>
-          {(this.state.isOver && !this.state.trendToRight) && 
-          <Trangle />}
-          <div
-            style={{
-                margin: '5px 10px 0',
-                pointerEvents: 'none' // 防止子元素触发ondragleave事件。
-            }}>{title}</div>
-          {(this.state.isOver && this.state.trendToRight) && 
-          <Trangle />}
-        </div>);
-    }
-}
-
-
-function TopBarAddButton({onClick}) {
-    return (
-      <div
-        style={{
-            border: '1px solid black',
-            cursor: 'pointer',
-            userSelect: 'none',
-        }}
-        onClick={onClick}>
-        +
-      </div>);
-}
-
-
-function SideBarNode({title, hasArrow, expand, active, onClick, indent, onExpand}) {
+class SideBarNode extends React.Component {
     /**
      * props:
      *     title [String]
      *     hasArrow [Boolean]
      *     expand [Boolean]
      *     active [Boolean]
+     *     indent [Number]
      * 
      *     onClick [callback func]
+     *     onExpand [callback func]
      */
-    let arrow;
-    if (hasArrow) {
-        if (expand) {
-            arrow = <span>{'v'}</span>
-        } else {
-            arrow = <span>{'>'}</span>
-        }
-    } else {
-        arrow = null;
+    constructor(props) {
+        super(props);
     }
-    return (
-        <div
-          style={{
-            border: '1px solid black',
-            backgroundColor: active ? 'green' : 'white',
-            cursor: 'pointer',
-            userSelect: 'none'
-          }}
-          onClick={onClick}>
-          <div 
+
+    render() {
+        const {title, hasArrow, expand, active, indent, onClick, onExpand} = this.props;
+        let arrow;
+        if (hasArrow) {
+            if (expand) {
+                arrow = <span>{'v'}</span>
+            } else {
+                arrow = <span>{'>'}</span>
+            }
+        } else {
+            arrow = null;
+        }
+        return (
+            <div
             style={{
-              display: 'inline-block',
-              margin: `${indent * 8}px`
-              }}
-            onClick={onExpand}>{arrow}</div>
-          <div style={{
-            display: 'inline-block'
-            }}>{title}</div>
-        </div>);
+                border: '1px solid black',
+                backgroundColor: active ? 'green' : 'white',
+                cursor: 'pointer',
+                userSelect: 'none'
+            }}
+            onClick={onClick}>
+            <div 
+                style={{
+                display: 'inline-block',
+                margin: `${indent * 8}px`
+                }}
+                onClick={onExpand}>{arrow}</div>
+            <div style={{
+                display: 'inline-block'
+                }}>{title}</div>
+            </div>);
+    }
 }
 
 
