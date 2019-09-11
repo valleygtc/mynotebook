@@ -317,7 +317,6 @@ class App extends React.Component {
 
     renderTopBarNodes = (nodes, activeNodeId) => {
         const items = [];
-        let lastKey;
         for (const node of nodes) {
             items.push(
                 <TopBarNode
@@ -330,11 +329,7 @@ class App extends React.Component {
                   onDelete={() => {this.handleTopBarNodeDelete(node.id)}}
                 />
             );
-            lastKey = node.id;
         }
-        items.push(<TopBarAddButton
-                      key={lastKey + 1}
-                      onClick={this.handleTopBarNodeAdd}/>);
         return items;
     }
 
@@ -349,6 +344,27 @@ class App extends React.Component {
             })
         }
         return nodes;
+    }
+
+    handleSideBarNodeClick = (nodeId) => {
+        const parentIdChain = readParentNodeIdChainOf(nodeId);
+        parentIdChain.push(nodeId);
+        this.setState({
+            activeNodeIdChain: parentIdChain
+        });
+    }
+
+    handleSideBarNodeExpandClick = (nodeId) => {
+        const index = this.state.expandNodeIdList.indexOf(nodeId);
+        let newList = [...this.state.expandNodeIdList];
+        if (index === -1) {
+            newList.push(nodeId);
+        } else {
+            newList.splice(index, 1);
+        }
+        this.setState({
+            expandNodeIdList: newList
+        })
     }
 
     renderSideBarNodes = (nodes, activeNodeIdChain) => {
@@ -388,27 +404,6 @@ class App extends React.Component {
         return items;
     }
 
-    handleSideBarNodeClick = (nodeId) => {
-        const parentIdChain = readParentNodeIdChainOf(nodeId);
-        parentIdChain.push(nodeId);
-        this.setState({
-            activeNodeIdChain: parentIdChain
-        });
-    }
-
-    handleSideBarNodeExpandClick = (nodeId) => {
-        const index = this.state.expandNodeIdList.indexOf(nodeId);
-        let newList = [...this.state.expandNodeIdList];
-        if (index === -1) {
-            newList.push(nodeId);
-        } else {
-            newList.splice(index, 1);
-        }
-        this.setState({
-            expandNodeIdList: newList
-        })
-    }
-
     render() {
         return (<div
             style={{
@@ -420,6 +415,7 @@ class App extends React.Component {
             }}>
               <TopBar handleTopBarNodeAdd={this.handleTopBarNodeAdd}>
                 {this.renderTopBarNodes(this.state.topBarNodes, this.state.activeNodeIdChain[0])}
+                <TopBarAddButton onClick={this.handleTopBarNodeAdd}/>
               </TopBar>
               <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
               <SideBar>
