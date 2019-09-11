@@ -3,8 +3,11 @@ import ReactDOM from 'react-dom';
 import './index.css';
 
 import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf, 
-         minusSeqOf, addSeqOf, updateSeqOf,
-         addNode, deleteNode } from './db'
+    minusSeqOf, addSeqOf, updateSeqOf,
+    addNode, deleteNode } from './db';
+
+const { remote } = window.require('electron');
+const { Menu, MenuItem } = remote;
 
 
 function Trangle() {
@@ -21,7 +24,10 @@ function Trangle() {
 }
 
 
-function TopBar({children}) {
+function TopBar({handleTopBarNodeAdd, children}) {
+    const menu = new Menu();
+    menu.append(new MenuItem({ label: 'add node', click: handleTopBarNodeAdd}));
+
     return (<div
         style={{
             gridColumn: '1/3',
@@ -29,6 +35,10 @@ function TopBar({children}) {
             display: 'flex',
             flexWrap: 'wrap',
             alignItems: 'flex-end'
+        }}
+        onContextMenu={(e) => {
+            e.preventDefault();
+            menu.popup();
         }}>
             {children}
     </div>);
@@ -394,7 +404,7 @@ class App extends React.Component {
                 gridTemplateRows: '5% 95%',
                 gridTemplateColumns: '80% 20%'
             }}>
-              <TopBar>
+              <TopBar handleTopBarNodeAdd={this.handleTopBarNodeAdd}>
                 {this.renderTopBarNodes(this.state.topBarNodes, this.state.activeNodeIdChain[0])}
               </TopBar>
               <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
