@@ -24,36 +24,252 @@ function Trangle() {
 }
 
 
-function TopBar({handleTopBarNodeAdd, children}) {
-    const menu = new Menu();
-    menu.append(new MenuItem({ label: 'add node', click: handleTopBarNodeAdd}));
+class TopBar extends React.Component {
+    /**
+     * props:
+     *     activeNodeId [Number]
+     *     onNodeClick [callback func]
+     */
+    constructor(props) {
+        super(props);
+        this.state = {
+            topBarNodes: readChildrenOf(null)
+        }
+    }
 
-    return (<div
-        style={{
-            gridColumn: '1/3',
-            borderBottom: '1px solid black',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'flex-end'
-        }}
-        onContextMenu={(e) => {
-            e.preventDefault();
-            menu.popup();
-        }}>
-            {children}
-    </div>);
+    refresh = () => {
+        this.setState({
+            topBarNodes: readChildrenOf(null)
+        })
+    }
+
+    handleNodeAdd = () => {
+        const topBarNodes = this.state.topBarNodes;
+        addNode(0, topBarNodes.length + 1, null, '未命名', '');
+        this.refresh();
+    }
+
+    handleNodeDelete = (nodeId) => {
+        deleteNode(nodeId);
+        this.refresh();
+    }
+
+    handleNodeClick = (nodeId) => {
+        console.log('TopBar handleNodeClick');
+        if (nodeId === this.props.activeNodeId) {
+            return
+        } else {
+            console.log(`TopBar handleNodeClick: call this.props.onNodeClick(${nodeId})`);
+            this.props.onNodeClick(nodeId);
+        }
+    }
+
+    handleNodeDragStart = (nodeId, event) => {
+        event.dataTransfer.setData('fromNodeId', nodeId);
+        event.dataTransfer.dropEffect = 'move';
+    }
+
+    handleNodeDrop = (toNodeId, insertAfter, event) => {
+        event.preventDefault();
+        const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
+        // perform node move: write database and retrive data then setState topBarNodes
+        let fromNodeIndex, toNodeIndex;
+        let fromNode, toNode;
+        for (const [index, node] of this.state.topBarNodes.entries()) {
+            if (node.id === fromNodeId) {
+                fromNodeIndex = index;
+                fromNode = node;
+            }
+            if(node.id === toNodeId) {
+                toNodeIndex = index;
+                toNode = node;
+            }
+        }
+        console.log({fromNodeIndex, toNodeIndex, insertAfter});
+        if (fromNodeIndex === toNodeIndex) {
+            return ;
+        } else if (fromNodeIndex < toNodeIndex) {
+            if (insertAfter) {
+                updateSeqOf(fromNode.id, toNode.sequence);
+                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex + 1);
+                for (const node of middleNodes) {
+                    minusSeqOf(node.id, 1);
+                }
+            } else {
+                updateSeqOf(fromNode.id, toNode.sequence - 1);
+                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex);
+                for (const node of middleNodes) {
+                    minusSeqOf(node.id, 1);
+                }
+            }
+        } else {
+            if (insertAfter) {
+                updateSeqOf(fromNode.id, toNode.sequence + 1);
+                const middleNodes = this.state.topBarNodes.slice(toNodeIndex + 1, fromNodeIndex);
+                for (const node of middleNodes) {
+                    addSeqOf(node.id, 1);
+                }
+            } else {
+                updateSeqOf(fromNode.id, toNode.sequence);
+                const middleNodes = this.state.topBarNodes.slice(toNodeIndex, fromNodeIndex);
+                for (const node of middleNodes) {
+                    addSeqOf(node.id, 1);
+                }
+            }
+        }
+        this.refresh();
+    }
+
+    renderNodes = (nodes, activeNodeId) => {
+        const items = [];
+        for (const node of nodes) {
+            items.push(
+                <TopBarNode
+                  key={node.id}
+                  title={node.title}
+                  active={node.id === activeNodeId ? true : false}
+                  onClick={() => {this.handleNodeClick(node.id)}}
+                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
+                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
+                  onDelete={() => {this.handleNodeDelete(node.id)}}
+                />
+            );
+        }
+        return items;
+    }
+
+    render() {
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
+
+        return (
+          <div
+            style={{
+                gridColumn: '1/3',
+                borderBottom: '1px solid black',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'flex-end'
+            }}
+            onContextMenu={(e) => {
+                e.preventDefault();
+                menu.popup();
+            }}>
+              {this.renderNodes(this.state.topBarNodes, this.props.activeNodeId)}
+              <TopBarAddButton onClick={this.handleNodeAdd} />
+          </div>);
+    }
 }
 
 
-function SideBar({children}) {
-    return (<div
-        style={{
-            borderLeft: '1px solid black',
-            display: 'flex',
-            flexDirection: 'column'
-        }}>
-            {children}
-    </div>);
+class SideBar extends React.Component {
+    /**
+     * props:
+     *     topBarNodeId [Number]
+     *     activeNodeId [Number]
+     *     onNodeClick [callback func]
+     */
+    constructor(props) {
+        super(props);
+        this.state = {
+            sideBarNodesStructure: this.readNodeStructure(this.props.topBarNodeId),
+            expandNodeIdList: []
+        }
+    }
+
+    refresh = () => {
+        this.setState({
+            sideBarNodesStructure: this.readNodeStructure(this.props.topBarNodeId),
+        })
+    }
+
+    handleNodeExpandClick = (nodeId) => {
+        const index = this.state.expandNodeIdList.indexOf(nodeId);
+        let newList = [...this.state.expandNodeIdList];
+        if (index === -1) {
+            newList.push(nodeId);
+        } else {
+            newList.splice(index, 1);
+        }
+        this.setState({
+            expandNodeIdList: newList
+        })
+    }
+
+    handleNodeAdd = () => {
+        const s = this.state;
+        addNode(1, s.sideBarNodesStructure.length + 1, this.props.topBarNodeId, '未命名', '');
+        this.refresh();
+    }
+
+    readNodeStructure = (parentNodeId) => {
+        /** recursive read
+         * 
+         * Return: {
+         *     thisNode: [Object]
+         *     subNodes: [Array[Object]]
+         * }
+         */
+        const nodes_data = readChildrenOf(parentNodeId);
+        const nodes = []
+        for (const data of nodes_data) {
+            nodes.push({
+                thisNode: data,
+                subNodes: this.readNodeStructure(data.id)
+            })
+        }
+        return nodes;
+    }
+
+    renderSideBarNodes = (nodes, activeNodeId) => {
+        /** recursive render
+         * 
+         * Params:
+         *     nodes [Array[Object]]: [
+         *     {
+         *         'thisNode': [Object],
+         *         'subNodes': [Array[Object]]
+         *     },
+         *     ...
+         *     ]
+         */
+        let items = [];
+        for (const nodeBlock of nodes) {
+            const thisNode = nodeBlock.thisNode;
+            const hasSubNodes = nodeBlock.subNodes.length > 0;
+            const expand = this.state.expandNodeIdList.includes(thisNode.id);
+            items.push(
+                <SideBarNode
+                  key={thisNode.id}
+                  title={thisNode.title}
+                  hasArrow={hasSubNodes}
+                  expand={expand}
+                  active={thisNode.id === activeNodeId ? true : false}
+                  onClick={() => {this.props.onNodeClick(thisNode.id)}}
+                  indent={thisNode.level - 1}
+                  onExpand={() => {this.handleNodeExpandClick(thisNode.id)}}
+                />
+            );
+            if (hasSubNodes && expand) {
+                items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeId))
+            }
+        }
+        return items;
+    }
+
+    render() {
+        return (
+          <div
+            style={{
+                borderLeft: '1px solid black',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+              {this.props.activeNodeId !== undefined &&
+                 <SideBarAddButton onClick={this.handleNodeAdd} />}
+              {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.props.activeNodeId)}
+          </div>);
+    }
 }
 
 
@@ -240,194 +456,28 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         initDB();
-        this.state = this.getInitState();
-    }
-
-    getInitState = () => {
-        return {
-            topBarNodes: readChildrenOf(null),
-            sideBarNodesStructure: [],
-            activeNodeIdChain: [], // level(层级) number low -> high
-            expandNodeIdList: []
+        this.state = {
+            activeTopBarNodeId: undefined,
+            activeNodeId: undefined
         }
-    }
-
-    handleTopBarNodeAdd = () => {
-        const topBarNodes = this.state.topBarNodes;
-        addNode(0, topBarNodes.length + 1, null, '未命名', '');
-        this.setState(this.getInitState);
-    }
-
-    handleTopBarNodeDelete = (nodeId) => {
-        deleteNode(nodeId);
-        this.setState(this.getInitState);
     }
 
     handleTopBarNodeClick = (nodeId) => {
-        if (nodeId === this.state.activeNodeIdChain[0]) {
-            return
-        }
         this.setState({
-            activeNodeIdChain: [nodeId],
-            sideBarNodesStructure: this.readNodeStructure(nodeId)
+            activeTopBarNodeId: nodeId
         });
-    }
-
-    handleNodeDragStart = (nodeId, event) => {
-        event.dataTransfer.setData('fromNodeId', nodeId);
-        event.dataTransfer.dropEffect = 'move';
-    }
-
-    handleNodeDrop = (toNodeId, insertAfter, event) => {
-        event.preventDefault();
-        const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
-        // perform node move: write database and retrive data then setState topBarNodes
-        let fromNodeIndex, toNodeIndex;
-        let fromNode, toNode;
-        for (const [index, node] of this.state.topBarNodes.entries()) {
-            if (node.id === fromNodeId) {
-                fromNodeIndex = index;
-                fromNode = node;
-            }
-            if(node.id === toNodeId) {
-                toNodeIndex = index;
-                toNode = node;
-            }
-        }
-        console.log({fromNodeIndex, toNodeIndex, insertAfter});
-        if (fromNodeIndex === toNodeIndex) {
-            return ;
-        } else if (fromNodeIndex < toNodeIndex) {
-            if (insertAfter) {
-                updateSeqOf(fromNode.id, toNode.sequence);
-                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex + 1);
-                for (const node of middleNodes) {
-                    minusSeqOf(node.id, 1);
-                }
-            } else {
-                updateSeqOf(fromNode.id, toNode.sequence - 1);
-                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex);
-                for (const node of middleNodes) {
-                    minusSeqOf(node.id, 1);
-                }
-            }
-        } else {
-            if (insertAfter) {
-                updateSeqOf(fromNode.id, toNode.sequence + 1);
-                const middleNodes = this.state.topBarNodes.slice(toNodeIndex + 1, fromNodeIndex);
-                for (const node of middleNodes) {
-                    addSeqOf(node.id, 1);
-                }
-            } else {
-                updateSeqOf(fromNode.id, toNode.sequence);
-                const middleNodes = this.state.topBarNodes.slice(toNodeIndex, fromNodeIndex);
-                for (const node of middleNodes) {
-                    addSeqOf(node.id, 1);
-                }
-            }
-        }
-        this.setState(this.getInitState());
-    }
-
-    renderTopBarNodes = (nodes, activeNodeId) => {
-        const items = [];
-        for (const node of nodes) {
-            items.push(
-                <TopBarNode
-                  key={node.id}
-                  title={node.title}
-                  active={node.id === activeNodeId ? true : false}
-                  onClick={() => {this.handleTopBarNodeClick(node.id)}}
-                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
-                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
-                  onDelete={() => {this.handleTopBarNodeDelete(node.id)}}
-                />
-            );
-        }
-        return items;
-    }
-
-    readNodeStructure = (parentNodeId) => {
-        /** recursive read
-         * 
-         * Return: {
-         *     thisNode: [Object]
-         *     subNodes: [Array[Object]]
-         * }
-         */
-        const nodes_data = readChildrenOf(parentNodeId);
-        const nodes = []
-        for (const data of nodes_data) {
-            nodes.push({
-                thisNode: data,
-                subNodes: this.readNodeStructure(data.id)
-            })
-        }
-        return nodes;
+        this.handleNodeClick(nodeId);
     }
 
     handleSideBarNodeClick = (nodeId) => {
-        const parentIdChain = readParentNodeIdChainOf(nodeId).reverse();
-        parentIdChain.push(nodeId);
+        console.log(`handleSideBarNodeClick(${nodeId})`)
+        this.handleNodeClick(nodeId);
+    }
+
+    handleNodeClick = (nodeId) => {
         this.setState({
-            activeNodeIdChain: parentIdChain
+            activeNodeId: nodeId
         });
-    }
-
-    handleSideBarNodeExpandClick = (nodeId) => {
-        const index = this.state.expandNodeIdList.indexOf(nodeId);
-        let newList = [...this.state.expandNodeIdList];
-        if (index === -1) {
-            newList.push(nodeId);
-        } else {
-            newList.splice(index, 1);
-        }
-        this.setState({
-            expandNodeIdList: newList
-        })
-    }
-
-    handleSideBarNodeAdd = () => {
-        const s = this.state;
-        addNode(1, s.sideBarNodesStructure.length + 1, s.activeNodeIdChain[0], '未命名', '');
-        this.setState(this.getInitState);
-    }
-
-    renderSideBarNodes = (nodes, activeNodeIdChain) => {
-        /** recursive render
-         * 
-         * Params:
-         *     nodes [Array[Object]]: [
-         *     {
-         *         'thisNode': [Object],
-         *         'subNodes': [Array[Object]]
-         *     },
-         *     ...
-         *     ]
-         */
-        let items = [];
-        const activeNodeId = activeNodeIdChain[activeNodeIdChain.length - 1];
-        for (const nodeBlock of nodes) {
-            const thisNode = nodeBlock.thisNode;
-            const hasSubNodes = nodeBlock.subNodes.length > 0;
-            const expand = this.state.expandNodeIdList.includes(thisNode.id);
-            items.push(
-                <SideBarNode
-                  key={thisNode.id}
-                  title={thisNode.title}
-                  hasArrow={hasSubNodes}
-                  expand={expand}
-                  active={thisNode.id === activeNodeId ? true : false}
-                  onClick={() => {this.handleSideBarNodeClick(thisNode.id)}}
-                  indent={thisNode.level - 1}
-                  onExpand={() => {this.handleSideBarNodeExpandClick(thisNode.id)}}
-                />
-            );
-            if (hasSubNodes && expand) {
-                items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeIdChain))
-            }
-        }
-        return items;
     }
 
     render() {
@@ -439,15 +489,15 @@ class App extends React.Component {
                 gridTemplateRows: '5% 95%',
                 gridTemplateColumns: '80% 20%'
             }}>
-              <TopBar handleTopBarNodeAdd={this.handleTopBarNodeAdd}>
-                {this.renderTopBarNodes(this.state.topBarNodes, this.state.activeNodeIdChain[0])}
-                <TopBarAddButton onClick={this.handleTopBarNodeAdd}/>
-              </TopBar>
-              <Page activeNodeId={this.state.activeNodeIdChain[this.state.activeNodeIdChain.length - 1]} />
-              <SideBar>
-                <SideBarAddButton onClick={this.handleSideBarNodeAdd} />
-                {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.state.activeNodeIdChain)}
-              </SideBar>
+              <TopBar
+                 activeNodeId={this.state.activeTopBarNodeId}
+                 onNodeClick={this.handleTopBarNodeClick} />
+              <Page activeNodeId={this.state.activeNodeId} />
+              <SideBar
+                 key={this.state.activeTopBarNodeId} //如果activeTopBarNodeId变了，则SideBar直接re-create。
+                 topBarNodeId={this.state.activeTopBarNodeId}
+                 activeNodeId={this.state.activeNodeId}
+                 onNodeClick={this.handleSideBarNodeClick}/>
         </div>);
     }
 }
