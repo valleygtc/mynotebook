@@ -117,4 +117,20 @@ function readContentOf(nodeId) {
 }
 
 
-export { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf };
+function minusSeqOf(nodeId, num) {
+    db.prepare('update node set sequence=sequence-? where id=?').run([num, nodeId]);
+}
+
+
+function addSeqOf(nodeId, num) {
+    db.prepare('update node set sequence=sequence+? where id=?').run([num, nodeId]);
+}
+
+
+function updateSeqOf(nodeId, newSeq) {
+    db.prepare('update node set sequence=? where id=?').run([newSeq, nodeId]);
+}
+
+
+export { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf,
+         minusSeqOf, addSeqOf, updateSeqOf };

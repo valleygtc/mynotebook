@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf } from './db'
+import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf, 
+         minusSeqOf, addSeqOf, updateSeqOf} from './db'
 
 
 function Trangle() {
@@ -192,12 +193,16 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         initDB();
-        this.state = {
+        this.state = this.getInitState();
+    }
+
+    getInitState = () => {
+        return {
             topBarNodes: readChildrenOf(null),
             sideBarNodesStructure: [],
             activeNodeIdChain: [], // level(层级) low -> high
             expandNodeIdList: []
-        };
+        }
     }
 
     renderTopBarNodes = (nodes, activeNodeId) => {
@@ -237,18 +242,50 @@ class App extends React.Component {
         const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
         // perform node move: write database and retrive data then setState topBarNodes
         let fromNodeIndex, toNodeIndex;
+        let fromNode, toNode;
         for (const [index, node] of this.state.topBarNodes.entries()) {
             if (node.id === fromNodeId) {
                 fromNodeIndex = index;
-            } else if(node.id === toNodeId) {
+                fromNode = node;
+            }
+            if(node.id === toNodeId) {
                 toNodeIndex = index;
+                toNode = node;
             }
         }
-        if (fromNodeIndex < toNodeIndex) {
+        console.log({fromNodeIndex, toNodeIndex, insertAfter});
+        if (fromNodeIndex === toNodeIndex) {
+            return ;
+        } else if (fromNodeIndex < toNodeIndex) {
             if (insertAfter) {
-                // TODO
+                updateSeqOf(fromNode.id, toNode.sequence);
+                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex + 1);
+                for (const node of middleNodes) {
+                    minusSeqOf(node.id, 1);
+                }
+            } else {
+                updateSeqOf(fromNode.id, toNode.sequence - 1);
+                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex);
+                for (const node of middleNodes) {
+                    minusSeqOf(node.id, 1);
+                }
+            }
+        } else {
+            if (insertAfter) {
+                updateSeqOf(fromNode.id, toNode.sequence + 1);
+                const middleNodes = this.state.topBarNodes.slice(toNodeIndex + 1, fromNodeIndex);
+                for (const node of middleNodes) {
+                    addSeqOf(node.id, 1);
+                }
+            } else {
+                updateSeqOf(fromNode.id, toNode.sequence);
+                const middleNodes = this.state.topBarNodes.slice(toNodeIndex, fromNodeIndex);
+                for (const node of middleNodes) {
+                    addSeqOf(node.id, 1);
+                }
             }
         }
+        this.setState(this.getInitState());
     }
 
     readNodeStructure = (parentNodeId) => {
