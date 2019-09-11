@@ -64,6 +64,13 @@ class TopBar extends React.Component {
         }
     }
 
+    handleContextMenu = (event) => {
+        event.preventDefault();
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
+        menu.popup();
+    }
+
     handleNodeDragStart = (nodeId, event) => {
         event.dataTransfer.setData('fromNodeId', nodeId);
         event.dataTransfer.dropEffect = 'move';
@@ -139,9 +146,6 @@ class TopBar extends React.Component {
     }
 
     render() {
-        const menu = new Menu();
-        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
-
         return (
           <div
             style={{
@@ -151,10 +155,7 @@ class TopBar extends React.Component {
                 flexWrap: 'wrap',
                 alignItems: 'flex-end'
             }}
-            onContextMenu={(e) => {
-                e.preventDefault();
-                menu.popup();
-            }}>
+            onContextMenu={this.handleContextMenu}>
               {this.renderNodes(this.state.topBarNodes, this.props.activeNodeId)}
               <TopBarAddButton onClick={this.handleNodeAdd} />
           </div>);
@@ -197,9 +198,25 @@ class SideBar extends React.Component {
     }
 
     handleNodeAdd = () => {
-        const s = this.state;
-        addNode(1, s.sideBarNodesStructure.length + 1, this.props.topBarNodeId, '未命名', '');
+        addNode(1, this.state.sideBarNodesStructure.length + 1, this.props.topBarNodeId, '未命名', '');
         this.refresh();
+    }
+
+    handleNodeDelete = (nodeId) => {
+        deleteNode(nodeId);
+        this.refresh();
+    }
+
+    handleContextMenu = (event) => {
+        // 如果没有active的topbar node，那么右键无任何效果。
+        if (this.props.activeNodeId === undefined) {
+            return;
+        }
+
+        event.preventDefault();
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
+        menu.popup();
     }
 
     readNodeStructure = (parentNodeId) => {
@@ -264,7 +281,8 @@ class SideBar extends React.Component {
                 borderLeft: '1px solid black',
                 display: 'flex',
                 flexDirection: 'column'
-            }}>
+            }}
+            onContextMenu={this.handleContextMenu}>
               {this.props.activeNodeId !== undefined &&
                  <SideBarAddButton onClick={this.handleNodeAdd} />}
               {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.props.activeNodeId)}
