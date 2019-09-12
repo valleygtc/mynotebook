@@ -1,153 +1,177 @@
 const Database = window.require('better-sqlite3');
 const db = new Database(':memory:', {verbose: console.log});
 
-const nodes = [
+
+const sections = [
     {
         'id': 1,
-        'level': 0,
-        'sequence': 1,
-        'parentId': null,
-        'title': 'book1',
-        'content': 'testtttttt contetn'
-    },
-    {
+        'sequence': 0,
+        'title': 'section1',
+    },{
         'id': 2,
-        'level': 1,
         'sequence': 1,
-        'parentId': 1,
-        'title': 'parentNode1',
-        'content': 'testtttttt contetn'
-    },
+        'title': 'section2',
+    }
+]
+
+const pages = [
     {
-        'id': 3,
-        'level': 2,
-        'sequence': 1,
-        'parentId': 2,
-        'title': 'p1-subNode1',
-        'content': 'testtttttt contetn'
-    },
-    {
-        'id': 4,
-        'level': 2,
-        'sequence': 2,
-        'parentId': 2,
-        'title': 'p2-subNode2',
-        'content': 'testtttttt contetn'
-    },
-    {
-        'id': 5,
-        'level': 1,
-        'sequence': 2,
-        'parentId': 1,
-        'title': 'parentNode2',
-        'content': 'testtttttt contetn'
-    },
-    {
-        'id': 6,
+        'id': 1,
+        'section_id': 1,
         'level': 0,
-        'sequence': 2,
-        'parentId': null,
-        'title': 'book2',
-        'content': 'testtttttt contetn222222222222222222222'
-    },
-    {
-        'id': 7,
-        'level': 1,
-        'sequence': 1,
-        'parentId': 6,
+        'sequence': 0,
         'title': 'node1',
         'content': 'testtttttt contetn'
     },
     {
-        'id': 8,
+        'id': 2,
+        'section_id': 1,
         'level': 1,
-        'sequence': 2,
-        'parentId': 6,
+        'sequence': 0,
         'title': 'node2',
+        'content': 'testtttttt contetn'
+    },
+    {
+        'id': 3,
+        'section_id': 1,
+        'level': 1,
+        'sequence': 1,
+        'title': 'node3',
+        'content': 'testtttttt contetn'
+    },
+    {
+        'id': 4,
+        'section_id': 1,
+        'level': 0,
+        'sequence': 1,
+        'title': 'node4',
+        'content': 'testtttttt contetn'
+    },
+    {
+        'id': 5,
+        'section_id': 2,
+        'level': 0,
+        'sequence': 0,
+        'title': 'node5',
+        'content': 'testtttttt contetn'
+    },
+    {
+        'id': 6,
+        'section_id': 2,
+        'level': 0,
+        'sequence': 1,
+        'title': 'node6',
         'content': 'testtttttt contetn'
     }
 ];
 
 
 function initDB() {
-    db.prepare(`CREATE TABLE node (
+    console.log('initDB()');
+    // sequence: 从0开始。
+    db.prepare(`create table section (
                     id INTEGER PRIMARY KEY,
+                    sequence INTEGER,
+                    title TEXT
+                )`).run();
+    const stmt = db.prepare(`insert into section (id, sequence, title)
+                                 values ($id, $sequence, $title)`);
+    for (const sec of sections) {
+        stmt.run(sec);
+    }
+    // level: 从0开始，越小越大。
+    // sequence: 从0开始。
+    db.prepare(`create table page (
+                    id INTEGER PRIMARY KEY,
+                    section_id INTEGER,
                     level INTEGER,
                     sequence INTEGER,
-                    parentId INTEGER,
                     title TEXT,
                     content TEXT,
-                    FOREIGN KEY(parentId) REFERENCES node(id) ON DELETE CASCADE
-                    )`).run();
+                    FOREIGN KEY(section_id) REFERENCES section(id) ON DELETE CASCADE
+                )`).run();
 
-    const stmt = db.prepare(`INSERT INTO node (id, level, sequence, parentId, title, content)
-                                    VALUES ($id, $level, $sequence, $parentId, $title, $content)`);
-    for (const node of nodes) {
-        stmt.run(node);
+    const stmt2 = db.prepare(`insert into page (id, section_id, level, sequence, title, content)
+                                  values ($id, $section_id, $level, $sequence, $title, $content)`);
+    for (const p of pages) {
+        stmt2.run(p);
     }
 }
 
 
-function readData() {
-    return db.prepare('select * from node order by id', []).all();
+function readData(table) {
+    return db.prepare('select * from ? order by id').all([table]);
 }
 
 
-function readChildrenOf(nodeId) {
-    // select * from table where parentId == nodeId order by sequence
-    const operator = nodeId === null ? 'is' : '=';
-    return db.prepare(`select * from node where parentId ${operator} ? order by sequence`).all([nodeId]);
+function readSections() {
+    return db.prepare('select * from section order by sequence').all();
 }
 
 
-function readParentNodeIdChainOf(nodeId) {
-    /** recursive select * from table where parentId == nodeId
-     * 
-     * Return:
-     *     parentNodeIdChain [Array[Number]]: [parent, grandparent, grandgrandparent, ...]
-     */
-    const parentId = db.prepare('select parentId from node where id = ?').get([nodeId]).parentId;
-    if (parentId === null) {
-        return [];
-    }
+function readPagesOf(sectionId) {
+    return db.prepare(`select * from page where section_id = ? order by sequence`).all([sectionId]);
+}
 
-    return [parentId].concat(readParentNodeIdChainOf(parentId));
+function addSection(sequence, title) {
+    const id = db.prepare(`insert into section (sequence, title)
+                                      values (?, ?)`).run([sequence, title]);
+    return id;
 }
 
 
-function readContentOf(nodeId) {
-    const node = db.prepare('select content from node where id = ?').get([nodeId]);
-    return node === undefined ? '' : node.content;
+function deleteSection(id) {
+    db.prepare('delete from section where id=?').run([id]);
 }
 
 
-function minusSeqOf(nodeId, num) {
-    db.prepare('update node set sequence=sequence-? where id=?').run([num, nodeId]);
+function addSeqOfSection(id, num) {
+    db.prepare('update section set sequence=sequence+? where id=?').run([num, id]);
 }
 
 
-function addSeqOf(nodeId, num) {
-    db.prepare('update node set sequence=sequence+? where id=?').run([num, nodeId]);
+function minusSeqOfSection(id, num) {
+    db.prepare('update section set sequence=sequence-? where id=?').run([num, id]);
 }
 
 
-function updateSeqOf(nodeId, newSeq) {
-    db.prepare('update node set sequence=? where id=?').run([newSeq, nodeId]);
+function updateSeqOfSection(id, sequence) {
+    db.prepare('update section set sequence=? where id=?').run([sequence, id]);
 }
 
 
-function addNode(level, sequence, parentId, title, content) {
-    const newNodeId = db.prepare(`insert into node (level, sequence, parentId, title, content)
-                                      values (?, ?, ?, ?, ?)`).run([level, sequence, parentId, title, content]);
-    return newNodeId;
+function addPage(sectionId, level, sequence, title, content) {
+    const id = db.prepare(`insert into page (section_id, level, sequence, title, content)
+                                      values (?, ?, ?, ?, ?)`).run([sectionId, level, sequence, title, content]);
+    return id;
 }
 
 
-function deleteNode(nodeId) {
-    db.prepare('delete from node where id=?').run([nodeId]);
+function deletePage(id) {
+    db.prepare('delete from page where id=?').run([id]);
 }
 
 
-export { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf,
-         minusSeqOf, addSeqOf, updateSeqOf,
-         addNode, deleteNode };
+function readContentOf(pageId) {
+    const page = db.prepare('select content from page where id = ?').get([pageId]);
+    return page === undefined ? '' : page.content;
+}
+
+
+const dbInterface = {
+    initDB: initDB,
+    readSections: readSections,
+    readPagesOf: readPagesOf,
+    addSection: addSection,
+    deleteSection: deleteSection,
+    addSeqOfSection: addSeqOfSection,
+    minusSeqOfSection: minusSeqOfSection,
+    updateSeqOfSection: updateSeqOfSection,
+
+    addPage: addPage,
+    deletePage: deletePage,
+    readContentOf: readContentOf
+}
+
+
+export { dbInterface };

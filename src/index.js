@@ -2,9 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { initDB, readChildrenOf, readParentNodeIdChainOf, readContentOf, 
-    minusSeqOf, addSeqOf, updateSeqOf,
-    addNode, deleteNode } from './db';
+import { dbInterface as db } from './db';
 
 const { remote } = window.require('electron');
 const { Menu, MenuItem } = remote;
@@ -12,126 +10,123 @@ const { Menu, MenuItem } = remote;
 
 class TopBar extends React.Component {
     /**
+     * 
      * props:
-     *     activeNodeId [Number]
-     *     onNodeClick [callback func]
+     *     activeSectionId [Number]
+     *     onSectionClick [callback]
+     * state:
+     *     sections [Array[Object]]: {id [Number], sequence [Number], title [String]}
      */
     constructor(props) {
         super(props);
         this.state = {
-            topBarNodes: readChildrenOf(null)
+            sections: db.readSections()
         }
     }
 
     refresh = () => {
         this.setState({
-            topBarNodes: readChildrenOf(null)
+            sections: db.readSections()
         })
     }
 
-    handleNodeAdd = () => {
-        const topBarNodes = this.state.topBarNodes;
-        addNode(0, topBarNodes.length + 1, null, '未命名', '');
+    handleSectionAdd = () => {
+        const sections = this.state.sections;
+        db.addSection(sections.length + 1, '未命名');
         this.refresh();
     }
 
-    handleNodeDelete = (nodeId) => {
-        deleteNode(nodeId);
+    handleSectionDelete = (id) => {
+        db.deleteSection(id);
         this.refresh();
+        // section删除后，同时更新sidebar。
+        this.props.onSectionClick(undefined);
     }
 
-    handleNodeClick = (nodeId) => {
-        console.log('TopBar handleNodeClick');
-        if (nodeId === this.props.activeNodeId) {
+    handleSectionClick = (id) => {
+        console.log(`TopBar handleSectionClick(${id})`);
+        if (id === this.props.activeSectionId) {
             return
         } else {
-            console.log(`TopBar handleNodeClick: call this.props.onNodeClick(${nodeId})`);
-            this.props.onNodeClick(nodeId);
+            console.log(`TopBar handleSectionClick call this.props.onSectionClick(${id})`);
+            this.props.onSectionClick(id);
         }
     }
 
     handleContextMenu = (event) => {
         event.preventDefault();
         const menu = new Menu();
-        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
+        menu.append(new MenuItem({ label: 'Add Section', click: this.handleSectionAdd}));
         menu.popup();
     }
 
-    handleNodeDragStart = (nodeId, event) => {
-        event.dataTransfer.setData('fromNodeId', nodeId);
+    handleSectionDragStart = (id, event) => {
+        event.dataTransfer.setData('fromId', id);
         event.dataTransfer.dropEffect = 'move';
     }
 
-    handleNodeDrop = (toNodeId, insertAfter, event) => {
+    handleSectionDrop = (toId, dropAfter, event) => {
         event.preventDefault();
-        const fromNodeId = parseInt(event.dataTransfer.getData('fromNodeId'));
-        // perform node move: write database and retrive data then setState topBarNodes
-        let fromNodeIndex, toNodeIndex;
-        let fromNode, toNode;
-        for (const [index, node] of this.state.topBarNodes.entries()) {
-            if (node.id === fromNodeId) {
-                fromNodeIndex = index;
-                fromNode = node;
+        const fromId = parseInt(event.dataTransfer.getData('fromId'));
+        // perform section move: write database and refresh: retrive data then setState(sections).
+        let fromSection, toSection;
+        for (const sec of this.state.sections) {
+            if (sec.id === fromId) {
+                fromSection = sec;
             }
-            if(node.id === toNodeId) {
-                toNodeIndex = index;
-                toNode = node;
+            if(sec.id === toId) {
+                toSection = sec;
             }
         }
-        console.log({fromNodeIndex, toNodeIndex, insertAfter});
-        if (fromNodeIndex === toNodeIndex) {
+        const [fromSeq, toSeq] = [fromSection.sequence, toSection.sequence];
+        console.log({fromSection, toSection, dropAfter});
+        if (fromSeq === toSeq) {
             return ;
-        } else if (fromNodeIndex < toNodeIndex) {
-            if (insertAfter) {
-                updateSeqOf(fromNode.id, toNode.sequence);
-                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex + 1);
-                for (const node of middleNodes) {
-                    minusSeqOf(node.id, 1);
+        } else if (fromSeq < toSeq) {
+            if (dropAfter) {
+                db.updateSeqOfSection(fromSection.id, toSection.sequence);
+                const middleSections = this.state.sections.slice(fromSeq + 1, toSeq + 1);
+                for (const sec of middleSections) {
+                    db.minusSeqOfSection(sec.id, 1);
                 }
             } else {
-                updateSeqOf(fromNode.id, toNode.sequence - 1);
-                const middleNodes = this.state.topBarNodes.slice(fromNodeIndex + 1, toNodeIndex);
-                for (const node of middleNodes) {
-                    minusSeqOf(node.id, 1);
+                db.updateSeqOfSection(fromSection.id, toSection.sequence - 1);
+                const middleSections = this.state.sections.slice(fromSeq + 1, toSeq);
+                for (const sec of middleSections) {
+                    db.minusSeqOfSection(sec.id, 1);
                 }
             }
         } else {
-            if (insertAfter) {
-                updateSeqOf(fromNode.id, toNode.sequence + 1);
-                const middleNodes = this.state.topBarNodes.slice(toNodeIndex + 1, fromNodeIndex);
-                for (const node of middleNodes) {
-                    addSeqOf(node.id, 1);
+            if (dropAfter) {
+                db.updateSeqOfSection(fromSection.id, toSection.sequence + 1);
+                const middleSections = this.state.sections.slice(toSeq + 1, fromSeq);
+                for (const sec of middleSections) {
+                    db.addSeqOfSection(sec.id, 1);
                 }
             } else {
-                updateSeqOf(fromNode.id, toNode.sequence);
-                const middleNodes = this.state.topBarNodes.slice(toNodeIndex, fromNodeIndex);
-                for (const node of middleNodes) {
-                    addSeqOf(node.id, 1);
+                db.updateSeqOfSection(fromSection.id, toSection.sequence);
+                const middleSections = this.state.sections.slice(toSeq, fromSeq);
+                for (const sec of middleSections) {
+                    db.addSeqOfSection(sec.id, 1);
                 }
             }
         }
         this.refresh();
     }
 
-    renderNodes = (nodes, activeNodeId) => {
-        const items = [];
-        for (const node of nodes) {
-            items.push(
-                <TopBarNode
-                  key={node.id}
-                  title={node.title}
-                  active={node.id === activeNodeId ? true : false}
-                  onClick={() => {this.handleNodeClick(node.id)}}
-                  onDragStart={(event) => {this.handleNodeDragStart(node.id, event)}}
-                  onDrop={(insertAfter, event) => {this.handleNodeDrop(node.id, insertAfter, event)}}
-                  onDelete={() => {this.handleNodeDelete(node.id)}}
-                />
-            );
-        }
-        return items;
-    }
-
     render() {
+        const secItems = this.state.sections.map((sec) => (
+            <TopBarNode
+              key={sec.id}
+              title={sec.title}
+              active={sec.id === this.props.activeSectionId ? true : false}
+              onClick={() => {this.handleSectionClick(sec.id)}}
+              onDragStart={(event) => {this.handleSectionDragStart(sec.id, event)}}
+              onDrop={(dropAfter, event) => {this.handleSectionDrop(sec.id, dropAfter, event)}}
+              onDelete={() => {this.handleSectionDelete(sec.id)}}
+            />
+        ));
+
         return (
           <div
             style={{
@@ -142,8 +137,8 @@ class TopBar extends React.Component {
                 alignItems: 'flex-end'
             }}
             onContextMenu={this.handleContextMenu}>
-              {this.renderNodes(this.state.topBarNodes, this.props.activeNodeId)}
-              <TopBarAddButton onClick={this.handleNodeAdd} />
+              {secItems}
+              <TopBarAddButton onClick={this.handleSectionAdd} />
           </div>);
     }
 }
@@ -155,10 +150,10 @@ class TopBarNode extends React.Component {
      *     title [String]
      *     active [Boolean]
      * 
-     *     onClick [callback func]
-     *     onDragStart [callback func]
-     *     onDrop [callback func]
-     *     onDelete [callback func]
+     *     onClick [callback]
+     *     onDragStart [callback]
+     *     onDrop [callback]
+     *     onDelete [callback]
      */
     constructor(props) {
         super(props);
@@ -208,7 +203,7 @@ class TopBarNode extends React.Component {
 
     handleContextMenu = (event) => {
         event.preventDefault();
-        //activate this node
+        //activate this section
         this.props.onClick();
 
         const menu = new Menu();
@@ -281,121 +276,111 @@ function Trangle() {
 
 class SideBar extends React.Component {
     /**
-     * state:
-     *     sideBarNodesStructure: {
-     *         thisNode: [Object],
-     *         subNodes: [Array[Object]]
-     *     }
      * 
      * props:
-     *     topBarNodeId [Number]
-     *     activeNodeId [Number]
-     *     onNodeClick [callback func]
+     *     sectionId [Number]
+     *     activePageId [Number]
+     *     onPageClick [callback]
+     * 
+     * state:
+     *     pages [Array[Object]]
+     * 
      */
     constructor(props) {
         super(props);
         this.state = {
-            sideBarNodesStructure: this.readNodeStructure(this.props.topBarNodeId),
-            expandNodeIdList: []
+            pages: db.readPagesOf(this.props.sectionId),
+            foldPageIdList: []
         }
     }
 
     refresh = () => {
         this.setState({
-            sideBarNodesStructure: this.readNodeStructure(this.props.topBarNodeId),
+            pages: db.readPagesOf(this.props.sectionId),
         })
     }
 
-    handleNodeExpandClick = (nodeId) => {
-        const index = this.state.expandNodeIdList.indexOf(nodeId);
-        let newList = [...this.state.expandNodeIdList];
-        if (index === -1) {
-            newList.push(nodeId);
+    handlePageAdd = () => {
+        db.addPage(this.props.sectionId, 0, this.state.pages.length, '未命名', '');
+        this.refresh();
+    }
+
+    handlePageDelete = (id) => {
+        db.deletePage(id);
+        this.refresh();
+    }
+
+    handleFoldClick = (id) => {
+        // toggle fold
+        const sequence = this.state.foldPageIdList.indexOf(id);
+        let newList = [...this.state.foldPageIdList];
+        if (sequence === -1) {
+            newList.push(id);
         } else {
-            newList.splice(index, 1);
+            newList.splice(sequence, 1);
         }
         this.setState({
-            expandNodeIdList: newList
+            foldPageIdList: newList
         })
-    }
-
-    handleNodeAdd = () => {
-        addNode(1, this.state.sideBarNodesStructure.length + 1, this.props.topBarNodeId, '未命名', '');
-        this.refresh();
-    }
-
-    handleNodeDelete = (nodeId) => {
-        deleteNode(nodeId);
-        this.refresh();
-    }
-
-    handleNodeAddSubNode = () => {
-       
     }
 
     handleContextMenu = (event) => {
         // 如果没有active的topbar node，那么右键无任何效果。
-        if (this.props.activeNodeId === undefined) {
+        if (this.props.activePageId === undefined) {
             return;
         }
 
         event.preventDefault();
         const menu = new Menu();
-        menu.append(new MenuItem({ label: 'add node', click: this.handleNodeAdd}));
+        menu.append(new MenuItem({ label: 'add node', click: this.handlePageAdd}));
         menu.popup();
     }
 
-    readNodeStructure = (parentNodeId) => {
-        /** recursive read
-         * 
-         * Return: {
-         *     thisNode: [Object]
-         *     subNodes: [Array[Object]]
-         * }
-         */
-        const nodes_data = readChildrenOf(parentNodeId);
-        const nodes = []
-        for (const data of nodes_data) {
-            nodes.push({
-                thisNode: data,
-                subNodes: this.readNodeStructure(data.id)
-            })
-        }
-        return nodes;
-    }
-
-    renderSideBarNodes = (nodes, activeNodeId) => {
-        /** recursive render
+    renderPages = (pages, activePageId) => {
+        /**
          * 
          * Params:
-         *     nodes [Array[Object]]: [
-         *     {
-         *         'thisNode': [Object],
-         *         'subNodes': [Array[Object]]
-         *     },
-         *     ...
-         *     ]
+         *     pages [Array[Object]]: {
+         *         id: [Number],
+         *         section_id: [Number],
+         *         level: [Number],
+         *         sequence: [Number],
+         *         title: [String]
+         *     }
          */
-        let items = [];
-        for (const nodeBlock of nodes) {
-            const thisNode = nodeBlock.thisNode;
-            const hasSubNodes = nodeBlock.subNodes.length > 0;
-            const expand = this.state.expandNodeIdList.includes(thisNode.id);
+        const items = [];
+        for (let i = 0; i < pages.length; i++) {
+            const p = pages[i];
+            let hasSubPages;
+            if (i === pages.length - 1) {
+                hasSubPages = false;
+            } else {
+                const nextPage = pages[i + 1];
+                hasSubPages = nextPage.level > p.level ? true : false;
+            }
+            const fold = this.state.foldPageIdList.includes(p.id);
             items.push(
                 <SideBarNode
-                  key={thisNode.id}
-                  title={thisNode.title}
-                  hasArrow={hasSubNodes}
-                  expand={expand}
-                  active={thisNode.id === activeNodeId ? true : false}
-                  onClick={() => {this.props.onNodeClick(thisNode.id)}}
-                  indent={thisNode.level - 1}
-                  onExpand={() => {this.handleNodeExpandClick(thisNode.id)}}
-                  onDelete={() => {this.handleNodeDelete(thisNode.id)}}
+                  key={p.id}
+                  title={p.title}
+                  hasArrow={hasSubPages}
+                  fold={fold}
+                  active={p.id === activePageId ? true : false}
+                  onClick={() => {this.props.onPageClick(p.id)}}
+                  indent={p.level}
+                  onExpand={() => {this.handleFoldClick(p.id)}}
+                  onDelete={() => {this.handlePageDelete(p.id)}}
                 />
             );
-            if (hasSubNodes && expand) {
-                items = items.concat(this.renderSideBarNodes(nodeBlock.subNodes, activeNodeId))
+            if (fold && hasSubPages) {
+                // skip to last subPage.判定条件：
+                //   下一个page的level < 当前遍历的page，或到最后一个page了，就判定为the last subPage。
+                while(true) {
+                    i = i + 1;
+                    if ((i === pages.length - 1) || (pages[i + 1].level <= p.level)) {
+                        break;
+                    }
+                }
             }
         }
         return items;
@@ -410,9 +395,9 @@ class SideBar extends React.Component {
                 flexDirection: 'column'
             }}
             onContextMenu={this.handleContextMenu}>
-              {this.props.activeNodeId !== undefined &&
-                 <SideBarAddButton onClick={this.handleNodeAdd} />}
-              {this.renderSideBarNodes(this.state.sideBarNodesStructure, this.props.activeNodeId)}
+              {this.props.sectionId !== undefined &&
+                 <SideBarAddButton onClick={this.handlePageAdd} />}
+              {this.renderPages(this.state.pages, this.props.activePageId)}
           </div>);
     }
 }
@@ -423,7 +408,7 @@ class SideBarNode extends React.Component {
      * props:
      *     title [String]
      *     hasArrow [Boolean]
-     *     expand [Boolean]
+     *     fold [Boolean]
      *     active [Boolean]
      *     indent [Number]
      * 
@@ -448,13 +433,13 @@ class SideBarNode extends React.Component {
     }
 
     render() {
-        const {title, hasArrow, expand, active, indent, onClick, onExpand} = this.props;
+        const {title, hasArrow, fold, active, indent, onClick, onExpand} = this.props;
         let arrow;
         if (hasArrow) {
-            if (expand) {
-                arrow = <span>{'v'}</span>
-            } else {
+            if (fold) {
                 arrow = <span>{'>'}</span>
+            } else {
+                arrow = <span>{'v'}</span>
             }
         } else {
             arrow = null;
@@ -500,10 +485,16 @@ function SideBarAddButton({onClick}) {
 
 
 class Page extends React.Component {
+    /**
+     * props:
+     *     activePageId [Number]
+     * state:
+     *     content [String]
+     */
     constructor(props) {
         super(props);
         this.state = {
-            content: readContentOf(this.props.nodeId)
+            content: db.readContentOf(this.props.activePageId)
         }
     }
 
@@ -516,28 +507,23 @@ class Page extends React.Component {
 class App extends React.Component {
     constructor(props) {
         super(props);
-        initDB();
+        db.initDB();
         this.state = {
-            activeTopBarNodeId: undefined,
-            activeNodeId: undefined
+            activeSectionId: undefined,
+            activePageId: undefined
         }
     }
 
-    handleTopBarNodeClick = (nodeId) => {
+    handleSectionClick = (id) => {
         this.setState({
-            activeTopBarNodeId: nodeId
+            activeSectionId: id
         });
-        this.handleNodeClick(nodeId);
     }
 
-    handleSideBarNodeClick = (nodeId) => {
-        console.log(`handleSideBarNodeClick(${nodeId})`)
-        this.handleNodeClick(nodeId);
-    }
-
-    handleNodeClick = (nodeId) => {
+    handlePageNodeClick = (id) => {
+        console.log(`handlePageNodeClick(${id})`)
         this.setState({
-            activeNodeId: nodeId
+            activePageId: id
         });
     }
 
@@ -551,14 +537,14 @@ class App extends React.Component {
                 gridTemplateColumns: '80% 20%'
             }}>
               <TopBar
-                 activeNodeId={this.state.activeTopBarNodeId}
-                 onNodeClick={this.handleTopBarNodeClick} />
-              <Page activeNodeId={this.state.activeNodeId} />
+                 activeSectionId={this.state.activeSectionId}
+                 onSectionClick={this.handleSectionClick} />
+              <Page activePageId={this.state.activePageId} />
               <SideBar
-                 key={this.state.activeTopBarNodeId} //如果activeTopBarNodeId变了，则SideBar直接re-create。
-                 topBarNodeId={this.state.activeTopBarNodeId}
-                 activeNodeId={this.state.activeNodeId}
-                 onNodeClick={this.handleSideBarNodeClick}/>
+                 key={this.state.activeSectionId} //如果activeTopBarNodeId变了，则SideBar直接re-create。
+                 sectionId={this.state.activeSectionId}
+                 activePageId={this.state.activePageId}
+                 onPageClick={this.handlePageNodeClick}/>
         </div>);
     }
 }
