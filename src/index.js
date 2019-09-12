@@ -379,6 +379,7 @@ class SideBar extends React.Component {
                   onClick={() => {this.props.onNodeClick(thisNode.id)}}
                   indent={thisNode.level - 1}
                   onExpand={() => {this.handleNodeExpandClick(thisNode.id)}}
+                  onDelete={() => {this.handleNodeDelete(thisNode.id)}}
                 />
             );
             if (hasSubNodes && expand) {
@@ -416,9 +417,19 @@ class SideBarNode extends React.Component {
      * 
      *     onClick [callback func]
      *     onExpand [callback func]
+     *     onDelete [callback func]
      */
     constructor(props) {
         super(props);
+    }
+
+    handleContextMenu = (event) => {
+        event.preventDefault();
+
+        const menu = new Menu();
+        menu.append(new MenuItem({ label: 'delete', click: this.props.onDelete}));
+        menu.popup();
+        event.stopPropagation();
     }
 
     render() {
@@ -434,23 +445,26 @@ class SideBarNode extends React.Component {
             arrow = null;
         }
         return (
-            <div
+             <div
             style={{
                 border: '1px solid black',
                 backgroundColor: active ? 'green' : 'white',
                 cursor: 'pointer',
                 userSelect: 'none'
             }}
-            onClick={onClick}>
-            <div 
+            onClick={onClick}
+            onContextMenu={this.handleContextMenu}>
+              <div 
                 style={{
                 display: 'inline-block',
                 margin: `${indent * 8}px`
                 }}
-                onClick={onExpand}>{arrow}</div>
-            <div style={{
+                onClick={onExpand}>
+              {arrow}</div>
+              <div style={{
                 display: 'inline-block'
-                }}>{title}</div>
+                }}>
+              {title}</div>
             </div>);
     }
 }
