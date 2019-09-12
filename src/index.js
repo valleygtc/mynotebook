@@ -208,6 +208,8 @@ class TopBarNode extends React.Component {
 
     handleContextMenu = (event) => {
         event.preventDefault();
+        //activate this node
+        this.props.onClick();
 
         const menu = new Menu();
         menu.append(new MenuItem({ label: 'delete', click: this.props.onDelete}));
@@ -425,6 +427,9 @@ class SideBarNode extends React.Component {
 
     handleContextMenu = (event) => {
         event.preventDefault();
+
+        //activate this node
+        this.props.onClick();
 
         const menu = new Menu();
         menu.append(new MenuItem({ label: 'delete', click: this.props.onDelete}));
