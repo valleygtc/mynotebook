@@ -281,6 +281,12 @@ function Trangle() {
 
 class SideBar extends React.Component {
     /**
+     * state:
+     *     sideBarNodesStructure: {
+     *         thisNode: [Object],
+     *         subNodes: [Array[Object]]
+     *     }
+     * 
      * props:
      *     topBarNodeId [Number]
      *     activeNodeId [Number]
@@ -321,6 +327,10 @@ class SideBar extends React.Component {
     handleNodeDelete = (nodeId) => {
         deleteNode(nodeId);
         this.refresh();
+    }
+
+    handleNodeAddSubNode = () => {
+       
     }
 
     handleContextMenu = (event) => {
