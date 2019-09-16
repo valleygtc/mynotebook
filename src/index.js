@@ -326,7 +326,7 @@ class SideBar extends React.Component {
 
     handleContextMenu = (event) => {
         // 如果没有active的topbar node，那么右键无任何效果。
-        if (this.props.activePageId === undefined) {
+        if (this.props.sectionId === undefined) {
             return;
         }
 
