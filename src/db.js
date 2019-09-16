@@ -158,6 +158,16 @@ function readContentOf(pageId) {
 }
 
 
+function UpgradePage(id, num) {
+    db.prepare('update page set level=level-? where id=?').run([num, id]);
+}
+
+
+function DowngradePage(id, num) {
+    db.prepare('update page set level=level+? where id=?').run([num, id]);
+}
+
+
 const dbInterface = {
     initDB: initDB,
     readSections: readSections,
@@ -170,7 +180,9 @@ const dbInterface = {
 
     addPage: addPage,
     deletePage: deletePage,
-    readContentOf: readContentOf
+    readContentOf: readContentOf,
+    UpgradePage: UpgradePage,
+    DowngradePage: DowngradePage
 }
 
 

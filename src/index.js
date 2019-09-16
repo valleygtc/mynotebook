@@ -8,6 +8,11 @@ const { remote } = window.require('electron');
 const { Menu, MenuItem } = remote;
 
 
+const MAX_PAGE_LEVEL = 0;
+const MIN_PAGE_LEVEL = 2;
+
+
+
 class TopBar extends React.Component {
     /**
      * 
@@ -310,6 +315,22 @@ class SideBar extends React.Component {
         this.refresh();
     }
 
+    handlePageLevelUp = (page) => {
+        if (page.level <= MAX_PAGE_LEVEL) {
+            return;
+        }
+        db.UpgradePage(page.id, 1);
+        this.refresh();
+    }
+
+    handlePageLevelDown = (page) => {
+        if (page.level >= MIN_PAGE_LEVEL) {
+            return;
+        }
+        db.DowngradePage(page.id, 1);
+        this.refresh();
+    }
+
     handleFoldClick = (id) => {
         // toggle fold
         const sequence = this.state.foldPageIdList.indexOf(id);
@@ -367,9 +388,11 @@ class SideBar extends React.Component {
                   fold={fold}
                   active={p.id === activePageId ? true : false}
                   onClick={() => {this.props.onPageClick(p.id)}}
-                  indent={p.level}
-                  onExpand={() => {this.handleFoldClick(p.id)}}
+                  level={p.level}
+                  onFold={() => {this.handleFoldClick(p.id)}}
                   onDelete={() => {this.handlePageDelete(p.id)}}
+                  onLevelUp={() => {this.handlePageLevelUp(p)}}
+                  onLevelDown={() => {this.handlePageLevelDown(p)}}
                 />
             );
             if (fold && hasSubPages) {
@@ -410,11 +433,13 @@ class SideBarNode extends React.Component {
      *     hasArrow [Boolean]
      *     fold [Boolean]
      *     active [Boolean]
-     *     indent [Number]
+     *     level [Number]
      * 
-     *     onClick [callback func]
-     *     onExpand [callback func]
-     *     onDelete [callback func]
+     *     onClick [callback]
+     *     onFold [callback]
+     *     onDelete [callback]
+     *     onLevelUp [callback]
+     *     onLevelDown [callback]
      */
     constructor(props) {
         super(props);
@@ -428,12 +453,24 @@ class SideBarNode extends React.Component {
 
         const menu = new Menu();
         menu.append(new MenuItem({ label: 'delete', click: this.props.onDelete}));
+        const canUpgrade = (this.props.level > MAX_PAGE_LEVEL);
+        const canDowngrade = (this.props.level < MIN_PAGE_LEVEL);
+        menu.append(new MenuItem({
+            label: '创建子页',
+            click: this.props.onLevelDown,
+            enabled: canDowngrade
+        }));
+        menu.append(new MenuItem({
+            label: '升级子页',
+            click: this.props.onLevelUp,
+            enabled: canUpgrade
+        }));
         menu.popup();
         event.stopPropagation();
     }
 
     render() {
-        const {title, hasArrow, fold, active, indent, onClick, onExpand} = this.props;
+        const {title, hasArrow, fold, active, level, onClick, onFold} = this.props;
         let arrow;
         if (hasArrow) {
             if (fold) {
@@ -457,9 +494,9 @@ class SideBarNode extends React.Component {
               <div 
                 style={{
                 display: 'inline-block',
-                margin: `${indent * 8}px`
+                margin: `${level * 8}px`
                 }}
-                onClick={onExpand}>
+                onClick={onFold}>
               {arrow}</div>
               <div style={{
                 display: 'inline-block'
