@@ -488,7 +488,7 @@ class SideBarNode extends React.Component {
     return (
       <div
         style={{
-          border: '1px solid black',
+          border: active ? '1px solid black' : '',
           backgroundColor: active ? 'green' : 'white',
           cursor: 'pointer',
           userSelect: 'none'
