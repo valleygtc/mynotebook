@@ -1,7 +1,11 @@
 import React from 'react';
 
 
-export default function Trangle() {
+/**
+ * props:
+ *   topLeft [Bool]: 指示absolute position，true则为左上角，false则为右上角
+ */
+export default function Trangle({ topLeft }) {
   return (
     <div
       style={{
@@ -11,7 +15,8 @@ export default function Trangle() {
         borderColor: 'black transparent transparent transparent',
         position: 'absolute',
         top: '-6px',
-        right: '-6px'
+        left: topLeft ? '-6px' : '',
+        right: !topLeft ? '-6px' : ''
       }}
     />
   );

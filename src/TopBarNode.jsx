@@ -95,8 +95,8 @@ export default class TopBarNode extends React.Component {
         onDragLeave={this.handleDragLeave}
         onContextMenu={this.handleContextMenu}
       >
-        {(this.state.isOver && !this.state.trendToRight) &&
-          <Trangle />}
+        {this.state.isOver &&
+          <Trangle topLeft={!this.state.trendToRight} />}
         <div
           style={{
             margin: '5px 10px 0',
@@ -105,8 +105,6 @@ export default class TopBarNode extends React.Component {
         >
           {title}
         </div>
-        {(this.state.isOver && this.state.trendToRight) &&
-          <Trangle />}
       </div>
     );
   }
