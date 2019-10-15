@@ -11,12 +11,11 @@ function loadExtension(extPath) {
   const os = require('os');
   
   BrowserWindow.addDevToolsExtension(
-    path.join(os.homedir(),extPath)
+    path.join(os.homedir(), extPath)
   )
 }
 
 function createWindow () {
-  // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -26,7 +25,6 @@ function createWindow () {
     }
   })
 
-  // and load the index.html of the app.
   mainWindow.loadURL('http://localhost:3000/')
 
   // Open the DevTools.
@@ -56,13 +54,17 @@ app.on('ready', startApp)
 app.on('window-all-closed', function () {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') app.quit()
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 })
 
 app.on('activate', function () {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  if (mainWindow === null) createWindow()
+  if (mainWindow === null) {
+    createWindow()
+  }
 })
 
 // In this file you can include the rest of your app's specific main process
