@@ -43,7 +43,7 @@ function createWindow () {
 
 function startApp () {
   // add react-dev-tools extension
-  loadExtension('\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.0.6_0');
+  loadExtension('\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.2.0_0');
   createWindow();
 }
 
