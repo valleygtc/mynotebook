@@ -31,7 +31,7 @@ export default class TopBar extends React.Component {
 
   handleSectionAdd = () => {
     const sections = this.state.sections;
-    db.addSection(sections.length + 1, '未命名');
+    db.addSection(sections.length, '未命名');
     this.refresh();
   }
 
