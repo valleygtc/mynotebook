@@ -1,6 +1,6 @@
 import React from 'react';
 
-import Trangle from './Trangle.jsx'
+import TopBarTrangle from './TopBarTrangle.jsx'
 
 const { remote } = window.require('electron');
 const { Menu, MenuItem } = remote;
@@ -96,7 +96,7 @@ export default class TopBarNode extends React.Component {
         onContextMenu={this.handleContextMenu}
       >
         {this.state.isOver &&
-          <Trangle topLeft={!this.state.trendToRight} />}
+          <TopBarTrangle topLeft={!this.state.trendToRight} />}
         <div
           style={{
             margin: '5px 10px 0',

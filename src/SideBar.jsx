@@ -50,7 +50,7 @@ export default class SideBar extends React.Component {
     if (page.level <= MAX_PAGE_LEVEL) {
       return;
     }
-    db.UpgradePage(page.id, 1);
+    db.upgradePage(page.id, 1);
     this.refresh();
   }
 
@@ -58,7 +58,7 @@ export default class SideBar extends React.Component {
     if (page.level >= MIN_PAGE_LEVEL) {
       return;
     }
-    db.DowngradePage(page.id, 1);
+    db.downgradePage(page.id, 1);
     this.refresh();
   }
 
@@ -86,6 +86,60 @@ export default class SideBar extends React.Component {
     const menu = new Menu();
     menu.append(new MenuItem({ label: 'add node', click: this.handlePageAdd }));
     menu.popup();
+  }
+
+  handlePageDragStart = (id, event) => {
+    event.dataTransfer.setData('fromId', id);
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  handlePageDrop = (toId, dropAfter, event) => {
+    event.preventDefault();
+    const fromId = parseInt(event.dataTransfer.getData('fromId'));
+    // perform section move: write database and refresh: retrive data then setState(pages).
+    let fromPage, toPage;
+    for (const p of this.state.pages) {
+      if (p.id === fromId) {
+        fromPage = p;
+      }
+      if (p.id === toId) {
+        toPage = p;
+      }
+    }
+    const [fromSeq, toSeq] = [fromPage.sequence, toPage.sequence];
+    console.log({ fromPage, toPage, dropAfter });
+    if (fromSeq === toSeq) {
+      return;
+    } else if (fromSeq < toSeq) {
+      if (dropAfter) {
+        db.updateSeqOfPage(fromPage.id, toPage.sequence);
+        const middlePages = this.state.pages.slice(fromSeq + 1, toSeq + 1);
+        for (const p of middlePages) {
+          db.minusSeqOfPage(p.id, 1);
+        }
+      } else {
+        db.updateSeqOfPage(fromPage.id, toPage.sequence - 1);
+        const middlePages = this.state.pages.slice(fromSeq + 1, toSeq);
+        for (const p of middlePages) {
+          db.minusSeqOfPage(p.id, 1);
+        }
+      }
+    } else {
+      if (dropAfter) {
+        db.updateSeqOfPage(fromPage.id, toPage.sequence + 1);
+        const middlePages = this.state.pages.slice(toSeq + 1, fromSeq);
+        for (const p of middlePages) {
+          db.addSeqOfPage(p.id, 1);
+        }
+      } else {
+        db.updateSeqOfPage(fromPage.id, toPage.sequence);
+        const middlePages = this.state.pages.slice(toSeq, fromSeq);
+        for (const p of middlePages) {
+          db.addSeqOfPage(p.id, 1);
+        }
+      }
+    }
+    this.refresh();
   }
 
   /**
@@ -124,6 +178,8 @@ export default class SideBar extends React.Component {
           onDelete={() => { this.handlePageDelete(p.id) }}
           onLevelUp={() => { this.handlePageLevelUp(p) }}
           onLevelDown={() => { this.handlePageLevelDown(p) }}
+          onDragStart={(event) => { this.handlePageDragStart(p.id, event) }}
+          onDrop={(dropAfter, event) => { this.handlePageDrop(p.id, dropAfter, event) }}
         />
       );
       if (fold && hasSubPages) {

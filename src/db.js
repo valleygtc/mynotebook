@@ -27,7 +27,7 @@ const pages = [
     'id': 2,
     'section_id': 1,
     'level': 1,
-    'sequence': 0,
+    'sequence': 1,
     'title': 'node2',
     'content': 'testtttttt contetn'
   },
@@ -35,7 +35,7 @@ const pages = [
     'id': 3,
     'section_id': 1,
     'level': 1,
-    'sequence': 1,
+    'sequence': 2,
     'title': 'node3',
     'content': 'testtttttt contetn'
   },
@@ -43,7 +43,7 @@ const pages = [
     'id': 4,
     'section_id': 1,
     'level': 0,
-    'sequence': 1,
+    'sequence': 3,
     'title': 'node4',
     'content': 'testtttttt contetn'
   },
@@ -170,32 +170,50 @@ function readContentOf(pageId) {
 }
 
 
-function UpgradePage(id, num) {
+function upgradePage(id, num) {
   db.prepare('update page set level=level-? where id=?').run([num, id]);
 }
 
 
-function DowngradePage(id, num) {
+function downgradePage(id, num) {
   db.prepare('update page set level=level+? where id=?').run([num, id]);
 }
 
 
-const dbInterface = {
-  initDB: initDB,
-  readSections: readSections,
-  readPagesOf: readPagesOf,
-  addSection: addSection,
-  deleteSection: deleteSection,
-  addSeqOfSection: addSeqOfSection,
-  minusSeqOfSection: minusSeqOfSection,
-  updateSeqOfSection: updateSeqOfSection,
-
-  addPage: addPage,
-  deletePage: deletePage,
-  readContentOf: readContentOf,
-  UpgradePage: UpgradePage,
-  DowngradePage: DowngradePage
+function addSeqOfPage(id, num) {
+  db.prepare('update page set sequence=sequence+? where id=?').run([num, id]);
 }
+
+
+function minusSeqOfPage(id, num) {
+  db.prepare('update page set sequence=sequence-? where id=?').run([num, id]);
+}
+
+
+function updateSeqOfPage(id, sequence) {
+  db.prepare('update page set sequence=? where id=?').run([sequence, id]);
+}
+
+
+const dbInterface = {
+  initDB,
+  readSections,
+  readPagesOf,
+  addSection,
+  deleteSection,
+  addSeqOfSection,
+  minusSeqOfSection,
+  updateSeqOfSection,
+
+  addPage,
+  deletePage,
+  readContentOf,
+  upgradePage,
+  downgradePage,
+  addSeqOfPage,
+  minusSeqOfPage,
+  updateSeqOfPage,
+};
 
 
 export default dbInterface;

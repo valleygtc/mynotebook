@@ -3,9 +3,9 @@ import React from 'react';
 
 /**
  * props:
- *   topLeft [Bool]: 指示absolute position，true则为左上角，false则为右上角
+ *   LeftTop [Bool]: 指示absolute position，true则为左上角，false则为左下角。
  */
-export default function Trangle({ topLeft }) {
+export default function TopBarTrangle({ LeftTop }) {
   return (
     <div
       style={{
@@ -14,9 +14,9 @@ export default function Trangle({ topLeft }) {
         border: 'solid 5px',
         borderColor: 'black transparent transparent transparent',
         position: 'absolute',
-        top: '-6px',
-        left: topLeft ? '-6px' : '',
-        right: !topLeft ? '-6px' : ''
+        left: '-6px',
+        top: LeftTop ? '-6px' : '',
+        bottom: !LeftTop ? '-6px' : ''
       }}
     />
   );
