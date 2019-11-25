@@ -73,7 +73,7 @@ export default class SideBarNode extends React.Component {
         <div
           style={{
             display: 'inline-block',
-            margin: `${level * 8}px`
+            marginLeft: `${level * 8}px`
           }}
           onClick={onFold}
         >
