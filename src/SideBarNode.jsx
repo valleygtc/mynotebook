@@ -112,7 +112,6 @@ export default class SideBarNode extends React.Component {
       <div
         ref={this.boxRef}
         style={{
-          border: active ? '1px solid black' : '',
           backgroundColor: active ? 'green' : 'white',
           cursor: 'pointer',
           userSelect: 'none',
