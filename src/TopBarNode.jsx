@@ -20,47 +20,11 @@ export default class TopBarNode extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      isOver: false,
-      trendToRight: true
+      mouseOver: false,
+      dragOver: false,
+      tend2After: true,
     }
     this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
-  }
-
-  handleDragEnter = (event) => {
-    event.preventDefault();
-    this.setState({
-      isOver: true
-    })
-  }
-
-  handleDragLeave = (event) => {
-    event.preventDefault();
-    this.setState({
-      isOver: false
-    })
-  }
-
-  handleDragOver = (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    const cursorOffsetX = event.nativeEvent.offsetX;
-    const boxWidth = this.boxRef.current.clientWidth;
-    if (cursorOffsetX > boxWidth / 2) {
-      this.setState({
-        trendToRight: true
-      })
-    } else {
-      this.setState({
-        trendToRight: false
-      })
-    }
-  }
-
-  handleDrop = (event) => {
-    this.setState({
-      isOver: false
-    })
-    this.props.onDrop(this.state.trendToRight, event);
   }
 
   handleContextMenu = (event) => {
@@ -74,29 +38,93 @@ export default class TopBarNode extends React.Component {
     event.stopPropagation();
   }
 
+  handleMouseEnter = (event) => {
+    event.preventDefault();
+    console.log('handleMouseEnter: %o', { title: this.props.title })
+    this.setState({
+      mouseOver: true,
+    });
+  }
+
+  handleMouseLeave = (event) => {
+    event.preventDefault();
+    console.log('handleMouseLeave: %o', { title: this.props.title })
+    this.setState({
+      mouseOver: false,
+    });
+  }
+
+  handleDragEnter = (event) => {
+    event.preventDefault();
+    this.setState({
+      dragOver: true
+    })
+  }
+
+  handleDragLeave = (event) => {
+    event.preventDefault();
+    this.setState({
+      dragOver: false
+    })
+  }
+
+  handleDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const cursorOffsetX = event.nativeEvent.offsetX;
+    const boxWidth = this.boxRef.current.clientWidth;
+    if (cursorOffsetX > boxWidth / 2) {
+      this.setState({
+        tend2After: true
+      })
+    } else {
+      this.setState({
+        tend2After: false
+      })
+    }
+  }
+
+  handleDrop = (event) => {
+    this.setState({
+      dragOver: false
+    })
+    this.props.onDrop(this.state.tend2After, event);
+  }
+
   render() {
     const { title, active, onClick, onDragStart } = this.props;
+    const { mouseOver, dragOver, tend2After } = this.state;
+
+    let backgroundColor;
+    if (active) {
+      backgroundColor = 'green';
+    } else {
+      backgroundColor = mouseOver ? 'rgb(169,169,169)' : 'white';
+    }
+
     return (
       <div
         ref={this.boxRef}
         style={{
           border: '1px solid black',
-          backgroundColor: active ? 'green' : 'white',
+          backgroundColor: backgroundColor,
           cursor: 'pointer',
           userSelect: 'none',
           position: 'relative' // 为了子元素trangle的绝对定位。
         }}
         onClick={onClick}
+        onContextMenu={this.handleContextMenu}
+        onMouseEnter={this.handleMouseEnter}
+        onMouseLeave={this.handleMouseLeave}
         draggable={true}
         onDragStart={onDragStart}
         onDragOver={this.handleDragOver}
         onDrop={this.handleDrop}
         onDragEnter={this.handleDragEnter}
         onDragLeave={this.handleDragLeave}
-        onContextMenu={this.handleContextMenu}
       >
-        {this.state.isOver &&
-          <TopBarTrangle topLeft={!this.state.trendToRight} />}
+        {dragOver &&
+          <TopBarTrangle topLeft={!tend2After} />}
         <div
           style={{
             margin: '5px 10px 0',
