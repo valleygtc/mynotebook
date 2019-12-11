@@ -1,21 +1,21 @@
-// Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
+const { app, BrowserWindow } = require('electron')
 const path = require('path')
+const os = require('os');
+
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
 
+
 function loadExtension(extPath) {
-  const path = require('path');
-  const os = require('os');
-  
-  BrowserWindow.addDevToolsExtension(
+  return BrowserWindow.addDevToolsExtension(
     path.join(os.homedir(), extPath)
   )
 }
 
-function createWindow () {
+
+function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -26,11 +26,7 @@ function createWindow () {
   })
 
   mainWindow.loadURL('http://localhost:3000/')
-
-  // Open the DevTools.
   mainWindow.webContents.openDevTools()
-
-  // Emitted when the window is closed.
   mainWindow.on('closed', function () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
@@ -39,16 +35,19 @@ function createWindow () {
   })
 }
 
-function startApp () {
+
+function startApp() {
   // add react-dev-tools extension
   loadExtension('\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Extensions\\fmkadmapgofadopljbjfkapdkoienihi\\4.2.1_0');
   createWindow();
 }
 
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', startApp)
+
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
@@ -58,6 +57,7 @@ app.on('window-all-closed', function () {
     app.quit();
   }
 })
+
 
 app.on('activate', function () {
   // On macOS it's common to re-create a window in the app when the
