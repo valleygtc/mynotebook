@@ -12,7 +12,7 @@ export default function TopBarTrangle({ LeftTop }) {
         width: 0,
         height: 0,
         border: 'solid 5px',
-        borderColor: 'black transparent transparent transparent',
+        borderColor: 'transparent transparent transparent black',
         position: 'absolute',
         left: '-6px',
         top: LeftTop ? '-6px' : '',

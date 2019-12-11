@@ -135,6 +135,10 @@ export default class SideBarNode extends React.Component {
       <div
         ref={this.boxRef}
         style={{
+          // drag over加分割线指示。
+          border: `1px solid ${backgroundColor}`,
+          borderTopColor: (dragOver && !tend2After) ? 'black' : backgroundColor,
+          borderBottomColor: (dragOver && tend2After) ? 'black' : backgroundColor,
           backgroundColor: backgroundColor,
           cursor: 'pointer',
           userSelect: 'none',
