@@ -31,7 +31,7 @@ export default class SideBarNode extends React.Component {
     this.state = {
       mouseOver: false,
       dragOver: false,
-      trend2After: true,
+      tend2After: true,
     };
     this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
   }
@@ -97,11 +97,11 @@ export default class SideBarNode extends React.Component {
     const boxHeight = this.boxRef.current.clientHeight;
     if (cursorOffsetY > boxHeight / 2) {
       this.setState({
-        trend2After: true,
+        tend2After: true,
       });
     } else {
       this.setState({
-        trend2After: false,
+        tend2After: false,
       });
     }
   }
@@ -110,12 +110,12 @@ export default class SideBarNode extends React.Component {
     this.setState({
       dragOver: false,
     });
-    this.props.onDrop(this.state.trend2After, event);
+    this.props.onDrop(this.state.tend2After, event);
   }
 
   render() {
     const { title, hasArrow, fold, active, level, onClick, onFold, onDragStart } = this.props;
-    const { mouseOver, dragOver, trend2After } = this.state;
+    const { mouseOver, dragOver, tend2After } = this.state;
 
     let arrow;
     if (hasArrow) {
@@ -152,7 +152,7 @@ export default class SideBarNode extends React.Component {
         onDragLeave={this.handleDragLeave}
       >
         {dragOver &&
-          <SideBarTrangle LeftTop={!trend2After} />}
+          <SideBarTrangle LeftTop={!tend2After} />}
         <div
           style={{
             display: 'inline-block',
