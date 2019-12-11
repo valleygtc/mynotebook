@@ -29,47 +29,11 @@ export default class SideBarNode extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      isOver: false,
+      mouseOver: false,
+      dragOver: false,
       trend2After: true,
     };
     this.boxRef = React.createRef(); // to get box width以用来判断鼠标当前位置是偏左还是偏右。
-  }
-
-  handleDragEnter = (event) => {
-    event.preventDefault();
-    this.setState({
-      isOver: true,
-    });
-  }
-
-  handleDragLeave = (event) => {
-    event.preventDefault();
-    this.setState({
-      isOver: false,
-    });
-  }
-
-  handleDragOver = (event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    const cursorOffsetY = event.nativeEvent.offsetY;
-    const boxHeight = this.boxRef.current.clientHeight;
-    if (cursorOffsetY > boxHeight / 2) {
-      this.setState({
-        trend2After: true,
-      });
-    } else {
-      this.setState({
-        trend2After: false,
-      });
-    }
-  }
-
-  handleDrop = (event) => {
-    this.setState({
-      isOver: false,
-    });
-    this.props.onDrop(this.state.trend2After, event);
   }
 
   handleContextMenu = (event) => {
@@ -96,29 +60,90 @@ export default class SideBarNode extends React.Component {
     event.stopPropagation();
   }
 
+  handleMouseEnter = (event) => {
+    event.preventDefault();
+    console.log('handleMouseEnter: %o', { title: this.props.title })
+    this.setState({
+      mouseOver: true,
+    });
+  }
+
+  handleMouseLeave = (event) => {
+    event.preventDefault();
+    console.log('handleMouseLeave: %o', { title: this.props.title })
+    this.setState({
+      mouseOver: false,
+    });
+  }
+
+  handleDragEnter = (event) => {
+    event.preventDefault();
+    this.setState({
+      dragOver: true,
+    });
+  }
+
+  handleDragLeave = (event) => {
+    event.preventDefault();
+    this.setState({
+      dragOver: false,
+    });
+  }
+
+  handleDragOver = (event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const cursorOffsetY = event.nativeEvent.offsetY;
+    const boxHeight = this.boxRef.current.clientHeight;
+    if (cursorOffsetY > boxHeight / 2) {
+      this.setState({
+        trend2After: true,
+      });
+    } else {
+      this.setState({
+        trend2After: false,
+      });
+    }
+  }
+
+  handleDrop = (event) => {
+    this.setState({
+      dragOver: false,
+    });
+    this.props.onDrop(this.state.trend2After, event);
+  }
+
   render() {
     const { title, hasArrow, fold, active, level, onClick, onFold, onDragStart } = this.props;
+    const { mouseOver, dragOver, trend2After } = this.state;
+
     let arrow;
     if (hasArrow) {
-      if (fold) {
-        arrow = <span>{'>'}</span>
-      } else {
-        arrow = <span>{'v'}</span>
-      }
+        arrow = fold ? (<span>{'>'}</span>) : (<span>{'v'}</span>)
     } else {
       arrow = null;
     }
+
+    let backgroundColor;
+    if (active) {
+      backgroundColor = 'green';
+    } else {
+      backgroundColor = mouseOver ? 'rgb(169,169,169)' : 'white';
+    }
+
     return (
       <div
         ref={this.boxRef}
         style={{
-          backgroundColor: active ? 'green' : 'white',
+          backgroundColor: backgroundColor,
           cursor: 'pointer',
           userSelect: 'none',
           position: 'relative', // 为了子元素trangle的绝对定位。
         }}
         onClick={onClick}
         onContextMenu={this.handleContextMenu}
+        onMouseEnter={this.handleMouseEnter}
+        onMouseLeave={this.handleMouseLeave}
         draggable={true}
         onDragStart={onDragStart}
         onDragOver={this.handleDragOver}
@@ -126,8 +151,8 @@ export default class SideBarNode extends React.Component {
         onDragEnter={this.handleDragEnter}
         onDragLeave={this.handleDragLeave}
       >
-        {this.state.isOver &&
-          <SideBarTrangle LeftTop={!this.state.trend2After} />}
+        {dragOver &&
+          <SideBarTrangle LeftTop={!trend2After} />}
         <div
           style={{
             display: 'inline-block',
