@@ -4,6 +4,7 @@ import db from './db';
 import TopBar from './TopBar.jsx';
 import SideBar from './SideBar.jsx';
 import Page from './Page.jsx';
+import DraggableBorder from './DraggableBorder.jsx';
 
 
 /**
@@ -35,35 +36,12 @@ export default class App extends React.Component {
     });
   }
 
-  handleBorderDragStart = (event) => {
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.dropEffect = 'move';
-  }
-
-  handleBorderDrag = (event) => {
-    const pageWidth = event.pageX / window.innerWidth;
-    console.log('handleBorderDrag: %o', { pageWidth });
+  handleBorderDrag = (leftWidthPercentage) => {
+    console.log('handleBorderDrag: %o', { leftWidthPercentage });
     this.setState({
-      pageWidth,
+      pageWidth: leftWidthPercentage,
     });
   }
-
-  handleBorderDragEnd = (event) => {
-    const pageWidth = event.pageX / window.innerWidth;
-    console.log('handleBorderDragEnd: %o', { pageWidth });
-    this.setState({
-      pageWidth,
-    });
-  }
-
-  // handleDragOver = (event) => {
-  //   event.preventDefault();
-  //   event.dataTransfer.dropEffect = 'move';
-  // }
-
-  // handleDrop = (event) => {
-  //   event.preventDefault();
-  // }
 
   render() {
     const { activeSectionId, activePageId, pageWidth } = this.state;
@@ -108,17 +86,7 @@ export default class App extends React.Component {
               activePageId={activePageId}
             />
           </div>
-          <div
-            style={{
-              backgroundColor: 'black',
-              width: '2px',
-              cursor: 'col-resize',
-            }}
-            draggable={true}
-            onDragStart={this.handleBorderDragStart}
-            onDrag={this.handleBorderDrag}
-            onDragEnd={this.handleBorderDragEnd}
-          />
+          <DraggableBorder onDrag={this.handleBorderDrag} />
           <div
             style={{
               flex: `0 1 ${(1 - pageWidth) * 100}%`,
