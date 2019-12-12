@@ -200,7 +200,6 @@ export default class SideBar extends React.Component {
     return (
       <div
         style={{
-          borderLeft: '1px solid black',
           display: 'flex',
           flexDirection: 'column'
         }}

@@ -129,8 +129,6 @@ export default class TopBar extends React.Component {
     return (
       <div
         style={{
-          gridColumn: '1/3',
-          borderBottom: '1px solid black',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'flex-end'

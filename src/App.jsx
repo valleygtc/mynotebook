@@ -17,7 +17,8 @@ export default class App extends React.Component {
     db.initDB();
     this.state = {
       activeSectionId: undefined,
-      activePageId: undefined
+      activePageId: undefined,
+      pageWidth: 0.8, // 80%
     }
   }
 
@@ -34,34 +35,103 @@ export default class App extends React.Component {
     });
   }
 
+  handleBorderDragStart = (event) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  handleBorderDrag = (event) => {
+    const pageWidth = event.pageX / window.innerWidth;
+    console.log('handleBorderDrag: %o', { pageWidth });
+    this.setState({
+      pageWidth,
+    });
+  }
+
+  handleBorderDragEnd = (event) => {
+    const pageWidth = event.pageX / window.innerWidth;
+    console.log('handleBorderDragEnd: %o', { pageWidth });
+    this.setState({
+      pageWidth,
+    });
+  }
+
+  // handleDragOver = (event) => {
+  //   event.preventDefault();
+  //   event.dataTransfer.dropEffect = 'move';
+  // }
+
+  // handleDrop = (event) => {
+  //   event.preventDefault();
+  // }
+
   render() {
-    // 注：Page外层包上一层div的作用：避免Page和SideBar的key值冲突。
+    const { activeSectionId, activePageId, pageWidth } = this.state;
+
     return (
       <div
         style={{
           height: '100%',
           width: '100%',
-          display: 'grid',
-          gridTemplateRows: '5% 95%',
-          gridTemplateColumns: '80% 20%'
         }}
       >
-        <TopBar
-          activeSectionId={this.state.activeSectionId}
-          onSectionClick={this.handleSectionClick}
-        />
-        <div>
-          <Page
-            key={this.state.activePageId} //如果activePageId变了，则Page直接re-create。
-            activePageId={this.state.activePageId}
+        <div
+          style={{
+            boxSizing: 'border-box',
+            height: '4%',
+            display: 'flex',
+            alignItems: 'flex-end',
+            borderBottom: '1px solid black',
+          }}
+        >
+          <TopBar
+            activeSectionId={activeSectionId}
+            onSectionClick={this.handleSectionClick}
           />
         </div>
-        <SideBar
-          key={this.state.activeSectionId} //如果activeTopBarNodeId变了，则SideBar直接re-create。
-          sectionId={this.state.activeSectionId}
-          activePageId={this.state.activePageId}
-          onPageClick={this.handlePageNodeClick}
-        />
+        <div
+          style={{
+            boxSizing: 'border-box',
+            width: '100%',
+            height: '95%',
+            display: 'flex',
+            alignItems: 'stretch',
+          }}
+        >
+          <div
+            style={{
+              flex: `0 1 ${pageWidth * 100}%`,
+            }}
+          >
+            <Page
+              key={`page-${activePageId}`} //如果activePageId变了，则Page直接re-create。
+              activePageId={activePageId}
+            />
+          </div>
+          <div
+            style={{
+              backgroundColor: 'black',
+              width: '2px',
+              cursor: 'col-resize',
+            }}
+            draggable={true}
+            onDragStart={this.handleBorderDragStart}
+            onDrag={this.handleBorderDrag}
+            onDragEnd={this.handleBorderDragEnd}
+          />
+          <div
+            style={{
+              flex: `0 1 ${(1 - pageWidth) * 100}%`,
+            }}
+          >
+            <SideBar
+              key={`sidebar-${activeSectionId}`} //如果activeTopBarNodeId变了，则SideBar直接re-create。
+              sectionId={activeSectionId}
+              activePageId={activePageId}
+              onPageClick={this.handlePageNodeClick}
+            />
+          </div>
+        </div>
       </div>
     );
   }
